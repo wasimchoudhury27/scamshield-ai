@@ -105,8 +105,8 @@ export function analyzeMessageText(text: string): MessageAnalysisOutput {
     { pattern: /(?:within\s*(?:[0-9]+|one|two|three|24|12|2|1)\s*(?:hours?|hrs?|mins?|minutes?))/i, label: 'Strict Artificial Deadline' },
     { pattern: /(?:limited\s*(?:seats|vacancies|slots|flats?|offers?)|only\s*[0-9]+\s*left)/i, label: 'Artificial Scarcity' },
     { pattern: /(?:offer\s*expires\s*today|valid\s*only\s*today|last\s*(?:day|chance|date|call))/i, label: 'Immediate Offer Expiration' },
-    { pattern: /(?:act\s*now|urgent|urgently|strictly\s*urgent|respond\s*immediately)/i, label: 'Urgent Action Coercion' },
-    { pattern: /(?:first\s*come\s*first\s*serve|hurry\s*up)/i, label: 'High Urgency Cue' }
+    { pattern: /(?:act\s*now|urgent|urgently|strictly\s*urgent|respond\s*immediately|\bimmediately\b|\bright\s*now\b|\bdon'?t\s*wait\b|\bbefore\s*it'?s\s*too\s*late\b)/i, label: 'Urgent Action Coercion' },
+    { pattern: /(?:first\s*come\s*first\s*serve|hurry\s*up|please\s*hurry|\bemergency\b)/i, label: 'High Urgency Cue' }
   ];
 
   const matchedUrgencyEvidence: string[] = [];
@@ -230,8 +230,9 @@ export function analyzeMessageText(text: string): MessageAnalysisOutput {
 
   // --- F. SOCIAL ENGINEERING / PSYCHOLOGICAL MANIPULATION ---
   const socialEngKeywords = [
-    { pattern: /(?:do\s*not\s*disclose|keep\s*(?:it\s*)?confidential|secret\s*process|do\s*not\s*tell\s*anyone)/i, label: 'Secrecy & Isolation Tactic' },
-    { pattern: /(?:legal\s*action|police\s*complaint|arrest\s*warrant|penalty|fine\s*imposed|court\s*order)/i, label: 'Threat of Legal Action / Intimidation' },
+    { pattern: /(?:do\s*not\s*disclose|keep\s*(?:it\s*)?confidential|secret\s*process|do\s*not\s*tell\s*anyone|don'?t\s*tell\s*anyone|don'?t\s*call\s*anyone|keep\s*this\s*between\s*us|don'?t\s*contact\s*(?:the\s*)?bank|don'?t\s*ask\s*questions|don'?t\s*tell\s*(?:your\s*)?family)/i, label: 'Secrecy & Isolation Tactic' },
+    { pattern: /(?:your\s*(?:father|mother|son|daughter|husband|wife|brother|sister|family)|(?:father|mother|dad|mom)\s+is\s+(?:in|at)\s+(?:the\s+)?hospital|had\s+an\s+accident|something\s+terrible\s+happened)/i, label: 'Family Emergency Manipulation' },
+    { pattern: /(?:legal\s*action|police\s*complaint|arrest\s*warrant|penalty|fine\s*imposed|court\s*order|will\s*be\s*(?:arrested|blocked|disconnected))/i, label: 'Threat of Legal Action / Intimidation' },
     { pattern: /(?:lottery|lucky\s*draw|won\s*(?:prize|cash|car|iphone|crore))/i, label: 'Unsolicited Prize / Reward Bait' },
     { pattern: /(?:refundable\s*(?:in\s*10\s*minutes|instantly|with\s*first\s*salary|100%\s*guaranteed))/i, label: 'Deceptive Refund Guarantee' }
   ];
@@ -244,15 +245,18 @@ export function analyzeMessageText(text: string): MessageAnalysisOutput {
 
   if (matchedSocialEvidence.length > 0) {
     detectedCategories.add('SOCIAL_ENG');
+    const hasSecrecyOrThreat = matchedSocialEvidence.some(e =>
+      /tell|call|between|bank|questions|disclose|confidential|arrest|police|legal|blocked|disconnected/i.test(e)
+    );
     detections.push({
       category: 'SOCIAL_ENG',
       name: 'Social Engineering & Coercion Tactic',
-      severity: 'HIGH',
-      baseWeight: 14,
+      severity: hasSecrecyOrThreat ? 'HIGH' : 'MODERATE',
+      baseWeight: hasSecrecyOrThreat ? 18 : 10,
       whatDetected: `Detected manipulation tactics: "${matchedSocialEvidence.slice(0, 3).join('", "')}".`,
-      whyItMatters: 'Social engineering leverages isolation, fear of legal repercussions, or false assurances of "100% instant refund" to suppress the victim\'s natural skepticism.',
+      whyItMatters: 'Social engineering leverages isolation, fear of legal repercussions, or emotional family crises to suppress verification.',
       evidence: matchedSocialEvidence,
-      recommendedAction: 'Do not succumb to intimidation or secrecy mandates. Authentic regulatory and corporate actions are documented formally in verifiable writing.'
+      recommendedAction: 'Do not succumb to intimidation, secrecy mandates, or unverified crisis claims. Independently verify via a direct known phone number.'
     });
   }
 

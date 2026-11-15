@@ -1,131 +1,122 @@
 import React, { useState } from 'react';
-import { ShieldCheck, ShieldAlert, Sparkles, Globe, FileText, HelpCircle, Menu, X, RotateCcw, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Menu, X, RotateCcw } from 'lucide-react';
+
+export type MainNavTab = 'scanner' | 'emergency' | 'scambaiter' | 'radar' | 'training' | 'benchmarks';
 
 interface NavbarProps {
+  activeTab: MainNavTab;
+  onSelectTab: (tab: MainNavTab) => void;
   onReset: () => void;
-  onSelectMode: (mode: 'message' | 'url' | 'image' | 'email') => void;
   onOpenHowItWorks: () => void;
-  onScrollToEvidence: () => void;
   isResultActive: boolean;
 }
 
+const NAV_ITEMS: Array<{ id: MainNavTab; label: string }> = [
+  { id: 'scanner', label: 'Threat Scanner' },
+  { id: 'emergency', label: '911 Legal Hub' },
+  { id: 'scambaiter', label: 'AI Honeypot' },
+  { id: 'radar', label: 'Threat Radar' },
+  { id: 'training', label: 'IQ Lab' }
+];
+
 export const Navbar: React.FC<NavbarProps> = ({
+  activeTab,
+  onSelectTab,
   onReset,
-  onSelectMode,
   onOpenHowItWorks,
-  onScrollToEvidence,
   isResultActive
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const handlePrimaryAction = () => {
+    if (isResultActive) {
+      onReset();
+    } else if (activeTab !== 'scanner') {
+      onSelectTab('scanner');
+    } else {
+      onOpenHowItWorks();
+    }
+  };
+
+  const primaryActionLabel = isResultActive
+    ? 'New Scan'
+    : activeTab !== 'scanner'
+    ? 'Open Scanner'
+    : 'How It Works';
+
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-[#050811]/90 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
-        {/* Brand Logo */}
-        <div
-          onClick={onReset}
-          className="flex items-center space-x-3 cursor-pointer group"
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && onReset()}
+    <header className="sticky top-0 z-40 border-b border-[#F0E5EC] bg-white/92 backdrop-blur-md">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-8">
+        {/* Zone 1: Single-line Brand Wordmark */}
+        <button
+          type="button"
+          onClick={() => {
+            onReset();
+            onSelectTab('scanner');
+          }}
+          className="flex items-center gap-2.5 cursor-pointer group whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94D9B] rounded-lg"
           id="navbar-brand-logo"
         >
-          <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 via-sky-500/10 to-indigo-500/10 border border-cyan-500/30 group-hover:border-cyan-400 transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.15)]">
-            <ShieldCheck className="w-5 h-5 text-cyan-400 group-hover:scale-105 transition-transform" />
-            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
-          </div>
+          <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-[#E94D9B] to-[#C92D7D] text-white shadow-[0_6px_16px_-4px_rgba(233,77,155,0.45)] group-hover:scale-[1.03] transition-transform duration-150">
+            <ShieldCheck className="w-5 h-5" />
+          </span>
+          <span className="text-lg font-extrabold tracking-tight text-[#252033]">
+            SCAMSHIELD <span className="text-[#E94D9B]">AI</span>
+          </span>
+        </button>
 
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="text-xl font-bold tracking-tight text-white font-mono">
-                SCAM<span className="text-cyan-400">SHIELD</span>
-              </span>
-              <span className="px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider font-semibold rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/50">
-                AI SEC-OPS
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400 font-sans tracking-wide">
-              Pause. Verify. Protect.
-            </p>
-          </div>
-        </div>
-
-        {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center space-x-1 lg:space-x-2 text-xs font-mono">
-          <button
-            type="button"
-            onClick={() => { onReset(); onSelectMode('message'); }}
-            className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-900/80 transition-colors"
-          >
-            Investigate
-          </button>
-          <button
-            type="button"
-            onClick={() => { onReset(); onSelectMode('url'); }}
-            className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-900/80 transition-colors"
-          >
-            URL Scanner
-          </button>
-          <button
-            type="button"
-            onClick={() => { onReset(); onSelectMode('image'); }}
-            className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-900/80 transition-colors"
-          >
-            Document OCR
-          </button>
-          <button
-            type="button"
-            onClick={onScrollToEvidence}
-            className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-900/80 transition-colors"
-          >
-            Evidence Library
-          </button>
-          <button
-            type="button"
-            onClick={onOpenHowItWorks}
-            className="px-3 py-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-900/80 transition-colors flex items-center space-x-1"
-          >
-            <HelpCircle className="w-3.5 h-3.5" />
-            <span>How It Works</span>
-          </button>
+        {/* Zone 2: Clean Single-Line Text Navigation */}
+        <nav className="hidden lg:flex items-center gap-7 text-sm font-medium" aria-label="Main navigation">
+          {NAV_ITEMS.map((item) => {
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onSelectTab(item.id)}
+                className={`relative py-2 whitespace-nowrap shrink-0 cursor-pointer transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E94D9B] rounded ${
+                  isActive
+                    ? 'text-[#C92D7D] font-semibold'
+                    : 'text-[#777181] hover:text-[#252033]'
+                }`}
+              >
+                {item.label}
+                {isActive && (
+                  <span className="absolute left-0 right-0 -bottom-[1px] h-0.5 rounded-full bg-gradient-to-r from-[#E94D9B] to-[#C92D7D]" />
+                )}
+              </button>
+            );
+          })}
         </nav>
 
-        {/* Right Status / Actions */}
-        <div className="hidden sm:flex items-center space-x-3 text-xs font-mono">
-          <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-900/80 border border-slate-800 text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-slate-400">AI INVESTIGATOR:</span>
-            <span className="text-emerald-400 font-semibold">PROTECTED</span>
-          </div>
+        {/* Zone 3: Single Primary Action */}
+        <div className="hidden lg:flex items-center shrink-0">
+          <button
+            type="button"
+            onClick={handlePrimaryAction}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#E94D9B] to-[#C92D7D] hover:from-[#d93d8b] hover:to-[#b3246d] text-white text-sm font-semibold shadow-[0_6px_18px_-4px_rgba(233,77,155,0.4)] transition-all duration-150 cursor-pointer whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C92D7D] focus-visible:ring-offset-2"
+          >
+            {isResultActive && <RotateCcw className="w-3.5 h-3.5" />}
+            <span>{primaryActionLabel}</span>
+          </button>
+        </div>
 
+        {/* Mobile Controls */}
+        <div className="flex lg:hidden items-center gap-2 shrink-0">
           {isResultActive && (
             <button
               type="button"
               onClick={onReset}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 font-semibold transition-all cursor-pointer shadow-[0_0_12px_rgba(6,182,212,0.15)]"
+              className="min-h-[40px] px-3 py-1.5 rounded-xl bg-[#FCE7F3] text-[#C92D7D] text-xs font-semibold flex items-center gap-1 cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>New Scan</span>
             </button>
           )}
-        </div>
-
-        {/* Mobile Hamburger Toggle */}
-        <div className="flex md:hidden items-center space-x-2">
-          {isResultActive && (
-            <button
-              type="button"
-              onClick={onReset}
-              className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-cyan-400"
-              title="New Investigation"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-          )}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white"
+            className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl border border-[#F0E5EC] bg-white text-[#252033] hover:bg-[#FFF8FC] cursor-pointer"
             aria-label="Toggle navigation menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -135,42 +126,40 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-slate-800 bg-[#070b16] px-4 py-4 space-y-2 font-mono text-sm">
+        <div className="lg:hidden border-t border-[#F0E5EC] bg-white px-4 py-3 space-y-1">
+          {NAV_ITEMS.map((item) => {
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  onSelectTab(item.id);
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
+                  isActive
+                    ? 'bg-[#FCE7F3] text-[#C92D7D] font-semibold'
+                    : 'text-[#252033] hover:bg-[#FFF8FC]'
+                }`}
+              >
+                {item.label}
+              </button>
+            );
+          })}
           <button
             type="button"
-            onClick={() => { onReset(); onSelectMode('message'); setMobileMenuOpen(false); }}
-            className="w-full text-left px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-900"
+            onClick={() => {
+              onSelectTab('benchmarks');
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
+              activeTab === 'benchmarks'
+                ? 'bg-[#FCE7F3] text-[#C92D7D] font-semibold'
+                : 'text-[#777181] hover:bg-[#FFF8FC]'
+            }`}
           >
-            Investigate Message
-          </button>
-          <button
-            type="button"
-            onClick={() => { onReset(); onSelectMode('url'); setMobileMenuOpen(false); }}
-            className="w-full text-left px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-900"
-          >
-            URL Scanner
-          </button>
-          <button
-            type="button"
-            onClick={() => { onReset(); onSelectMode('image'); setMobileMenuOpen(false); }}
-            className="w-full text-left px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-900"
-          >
-            Document & Letter OCR
-          </button>
-          <button
-            type="button"
-            onClick={() => { onScrollToEvidence(); setMobileMenuOpen(false); }}
-            className="w-full text-left px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-900"
-          >
-            Evidence Library
-          </button>
-          <button
-            type="button"
-            onClick={() => { onOpenHowItWorks(); setMobileMenuOpen(false); }}
-            className="w-full text-left px-3 py-2 rounded-lg text-cyan-400 hover:bg-slate-900 flex items-center justify-between"
-          >
-            <span>How ScamShield Works</span>
-            <ArrowRight className="w-4 h-4" />
+            Model Benchmarks
           </button>
         </div>
       )}

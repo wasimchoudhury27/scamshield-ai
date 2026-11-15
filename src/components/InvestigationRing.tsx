@@ -1,6 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { RiskBand, RiskSignal } from '../types.js';
-import { CreditCard, Clock, UserCheck, Globe, Briefcase, Radio, ShieldAlert, ShieldCheck, AlertTriangle, AlertOctagon } from 'lucide-react';
+import {
+  CreditCard,
+  Clock,
+  UserCheck,
+  Globe,
+  Briefcase,
+  Radio,
+  ShieldAlert,
+  ShieldCheck,
+  AlertTriangle,
+  AlertOctagon
+} from 'lucide-react';
 
 export interface InvestigationRingProps {
   score: number;
@@ -15,18 +26,18 @@ interface OrbitalNode {
   id: string;
   name: string;
   label: string;
-  angle: number; // in degrees: 0 = top, 60, 120, 180, 240, 300
+  angle: number;
   icon: React.FC<{ className?: string }>;
   category: string;
 }
 
 const ORBITAL_NODES: OrbitalNode[] = [
-  { id: 'node-pay', name: 'PAYMENT', label: 'Payment Demand', angle: -90, icon: CreditCard, category: 'PAYMENT' },
-  { id: 'node-urg', name: 'URGENCY', label: 'Coercive Deadline', angle: -30, icon: Clock, category: 'URGENCY' },
-  { id: 'node-rec', name: 'RECRUITMENT', label: 'Unvetted Hiring', angle: 30, icon: Briefcase, category: 'EMPLOYMENT' },
-  { id: 'node-lnk', name: 'LINK / DNS', label: 'URL & Infrastructure', angle: 90, icon: Globe, category: 'URL_STRUCTURE' },
-  { id: 'node-ide', name: 'IDENTITY', label: 'Brand Impersonation', angle: 150, icon: UserCheck, category: 'IDENTITY' },
-  { id: 'node-beh', name: 'BEHAVIOR', label: 'Social Engineering', angle: 210, icon: Radio, category: 'SOCIAL_ENG' }
+  { id: 'node-pay', name: 'Payment', label: 'Payment Demand', angle: -90, icon: CreditCard, category: 'PAYMENT' },
+  { id: 'node-urg', name: 'Urgency', label: 'Coercive Deadline', angle: -30, icon: Clock, category: 'URGENCY' },
+  { id: 'node-rec', name: 'Hiring', label: 'Unvetted Hiring', angle: 30, icon: Briefcase, category: 'EMPLOYMENT' },
+  { id: 'node-lnk', name: 'URL / DNS', label: 'URL & Infrastructure', angle: 90, icon: Globe, category: 'URL_STRUCTURE' },
+  { id: 'node-ide', name: 'Identity', label: 'Brand Impersonation', angle: 150, icon: UserCheck, category: 'IDENTITY' },
+  { id: 'node-beh', name: 'Behavior', label: 'Social Engineering', angle: 210, icon: Radio, category: 'SOCIAL_ENG' }
 ];
 
 export const InvestigationRing: React.FC<InvestigationRingProps> = ({
@@ -43,7 +54,7 @@ export const InvestigationRing: React.FC<InvestigationRingProps> = ({
   useEffect(() => {
     if (isAnalyzing) return;
     let current = 0;
-    const increment = Math.max(1, Math.floor(score / 30));
+    const increment = Math.max(1, Math.floor(score / 28));
     const timer = setInterval(() => {
       current += increment;
       if (current >= score) {
@@ -52,73 +63,57 @@ export const InvestigationRing: React.FC<InvestigationRingProps> = ({
       } else {
         setDisplayedScore(current);
       }
-    }, 25);
+    }, 22);
     return () => clearInterval(timer);
   }, [score, isAnalyzing]);
 
-  // Color theme based on risk band
   const theme = {
     LOW: {
-      color: '#10b981',
-      bgGlow: 'rgba(16, 185, 129, 0.18)',
-      badgeBg: 'bg-emerald-950/80',
-      badgeBorder: 'border-emerald-500/50',
-      badgeText: 'text-emerald-400',
-      icon: ShieldCheck,
-      statusLabel: 'VERIFIED LOW RISK'
+      color: '#16A36A',
+      softBg: 'rgba(22, 163, 106, 0.1)',
+      textClass: 'text-[#16A36A]',
+      icon: ShieldCheck
     },
     MODERATE: {
-      color: '#f59e0b',
-      bgGlow: 'rgba(245, 158, 11, 0.18)',
-      badgeBg: 'bg-amber-950/80',
-      badgeBorder: 'border-amber-500/50',
-      badgeText: 'text-amber-400',
-      icon: AlertTriangle,
-      statusLabel: 'MODERATE SUSPICION'
+      color: '#E99A24',
+      softBg: 'rgba(233, 154, 36, 0.12)',
+      textClass: 'text-[#E99A24]',
+      icon: AlertTriangle
     },
     HIGH: {
-      color: '#f97316',
-      bgGlow: 'rgba(249, 115, 22, 0.22)',
-      badgeBg: 'bg-orange-950/80',
-      badgeBorder: 'border-orange-500/50',
-      badgeText: 'text-orange-400',
-      icon: ShieldAlert,
-      statusLabel: 'HIGH THREAT DETECTED'
+      color: '#E99A24',
+      softBg: 'rgba(233, 154, 36, 0.14)',
+      textClass: 'text-[#E99A24]',
+      icon: ShieldAlert
     },
     CRITICAL: {
-      color: '#ef4444',
-      bgGlow: 'rgba(239, 68, 68, 0.25)',
-      badgeBg: 'bg-red-950/80',
-      badgeBorder: 'border-red-500/50',
-      badgeText: 'text-red-400',
-      icon: AlertOctagon,
-      statusLabel: 'CRITICAL SCAM RISK'
+      color: '#E5484D',
+      softBg: 'rgba(229, 72, 77, 0.12)',
+      textClass: 'text-[#E5484D]',
+      icon: AlertOctagon
     }
   }[riskLevel];
 
   const IconComponent = theme.icon;
 
-  // Normalized 360-unit coordinate system so that SVG and satellite nodes scale via responsive container
   const baseDim = 360;
   const center = baseDim / 2;
-  const radius = baseDim * 0.32; // 115.2
-  const orbitRadius = baseDim * 0.44; // 158.4
+  const radius = baseDim * 0.32;
+  const orbitRadius = baseDim * 0.44;
   const circumference = 2 * Math.PI * radius;
-  const arcLength = circumference * 0.75; // 270 degree arc
+  const arcLength = circumference * 0.75;
   const strokeDashoffset = isAnalyzing
-    ? arcLength * 0.5
+    ? arcLength * 0.45
     : arcLength - arcLength * (displayedScore / 100);
 
-  // Check if a category was triggered in results
   const isCategoryTriggered = (category: string) => {
     return signals.some((s) => s.category === category);
   };
 
-  // Responsive container sizing to prevent horizontal overflow on small mobile screens
   const containerClasses = {
-    hero: 'w-[250px] h-[250px] min-[360px]:w-[280px] min-[360px]:h-[280px] sm:w-[330px] sm:h-[330px] md:w-[360px] md:h-[360px]',
-    compact: 'w-[190px] h-[190px] sm:w-[220px] sm:h-[220px] md:w-[240px] md:h-[240px]',
-    normal: 'w-[230px] h-[230px] sm:w-[270px] sm:h-[270px] md:w-[300px] md:h-[300px]'
+    hero: 'w-[240px] h-[240px] min-[360px]:w-[270px] min-[360px]:h-[270px] sm:w-[310px] sm:h-[310px] md:w-[330px] md:h-[330px]',
+    compact: 'w-[190px] h-[190px] sm:w-[220px] sm:h-[220px]',
+    normal: 'w-[230px] h-[230px] sm:w-[260px] sm:h-[260px] md:w-[290px] md:h-[290px]'
   }[size];
 
   return (
@@ -126,67 +121,58 @@ export const InvestigationRing: React.FC<InvestigationRingProps> = ({
       className={`relative flex flex-col items-center justify-center select-none max-w-full mx-auto ${containerClasses}`}
       style={{ touchAction: 'manipulation' }}
     >
-      {/* Dynamic ambient central glow */}
       <div
-        className="absolute inset-0 rounded-full filter blur-2xl sm:blur-3xl pointer-events-none transition-all duration-700 opacity-60"
+        className="absolute inset-6 rounded-full blur-2xl pointer-events-none transition-all duration-500 opacity-70"
         style={{
-          backgroundColor: isAnalyzing ? 'rgba(6, 182, 212, 0.15)' : theme.bgGlow
+          backgroundColor: isAnalyzing ? 'rgba(233, 77, 155, 0.14)' : theme.softBg
         }}
       />
 
-      {/* SVG Canvas for Ring, Ticks, and Orbit Lines */}
       <svg
         className="w-full h-full transform -rotate-135 pointer-events-none"
         viewBox={`0 0 ${baseDim} ${baseDim}`}
       >
-        {/* Outer Orbit Guide Track */}
         <circle
           cx={center}
           cy={center}
           r={orbitRadius}
           fill="none"
-          stroke="rgba(255, 255, 255, 0.06)"
-          strokeWidth="1"
+          stroke="#F0E5EC"
+          strokeWidth="1.25"
           strokeDasharray="4 6"
         />
 
-        {/* Inner Gauge Background Track */}
         <circle
           cx={center}
           cy={center}
           r={radius}
           fill="none"
-          stroke="#131c2e"
+          stroke="#FCE7F3"
           strokeWidth="12"
           strokeDasharray={`${arcLength} ${circumference}`}
           strokeLinecap="round"
         />
 
-        {/* Active Animated Threat Arc */}
         <circle
           cx={center}
           cy={center}
           r={radius}
           fill="none"
-          stroke={isAnalyzing ? '#06b6d4' : theme.color}
+          stroke={isAnalyzing ? '#E94D9B' : theme.color}
           strokeWidth="12"
           strokeDasharray={`${arcLength} ${circumference}`}
           strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
           className="transition-all duration-700 ease-out"
-          style={{
-            filter: `drop-shadow(0 0 10px ${isAnalyzing ? '#06b6d4' : theme.color})`
-          }}
         />
 
-        {/* Subtle Decorative Tick Rings */}
         {Array.from({ length: 24 }).map((_, i) => {
           const tickAngle = (i * 360) / 24;
           const rad = (tickAngle * Math.PI) / 180;
           const x1 = center + (radius - 18) * Math.cos(rad);
           const y1 = center + (radius - 18) * Math.sin(rad);
-          const x2 = center + (radius - 24) * Math.cos(rad);
-          const y2 = center + (radius - 24) * Math.sin(rad);
+          const x2 = center + (radius - 23) * Math.cos(rad);
+          const y2 = center + (radius - 23) * Math.sin(rad);
           return (
             <line
               key={i}
@@ -194,59 +180,53 @@ export const InvestigationRing: React.FC<InvestigationRingProps> = ({
               y1={y1}
               x2={x2}
               y2={y2}
-              stroke="rgba(255, 255, 255, 0.1)"
+              stroke="#E7D2DF"
               strokeWidth="1"
             />
           );
         })}
       </svg>
 
-      {/* Center Core HUD readout */}
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-2 z-10 pointer-events-none">
         {isAnalyzing ? (
-          <div className="space-y-0.5 sm:space-y-1">
-            <span className="text-[9px] min-[360px]:text-[10px] font-mono tracking-widest text-cyan-400 uppercase font-semibold block animate-pulse">
-              ANALYZING EVIDENCE
+          <div className="space-y-1">
+            <span className="text-[10px] font-semibold tracking-wider text-[#C92D7D] uppercase block">
+              Analyzing
             </span>
-            <div className="text-2xl min-[360px]:text-3xl sm:text-4xl font-extrabold font-mono text-white tracking-tight">
-              STAGE 0{Math.min(activeStageIndex + 1, 6)}
+            <div className="text-2xl sm:text-3xl font-extrabold font-mono tabular-nums text-[#252033]">
+              Step 0{Math.min(activeStageIndex + 1, 6)}
             </div>
-            <span className="text-[10px] min-[360px]:text-[11px] font-mono text-slate-400 block">
-              Correlating Signals...
+            <span className="text-[11px] text-[#777181] block">
+              Correlating signals
             </span>
           </div>
         ) : (
-          <div className="space-y-0.5 sm:space-y-1">
-            <span className="text-[8px] min-[360px]:text-[9px] sm:text-[10px] font-mono tracking-widest text-slate-400 uppercase font-semibold block">
-              SCAM THREAT INDEX
+          <div className="space-y-1">
+            <span className="text-[10px] font-semibold tracking-wider text-[#777181] uppercase block">
+              Threat Index
             </span>
             <div className="flex items-baseline justify-center">
-              <span className="text-3xl min-[360px]:text-4xl sm:text-5xl font-extrabold font-mono tracking-tight text-white">
+              <span className="text-4xl sm:text-5xl font-extrabold font-mono tabular-nums tracking-tight text-[#252033]">
                 {displayedScore}
               </span>
-              <span className="text-sm min-[360px]:text-base sm:text-lg font-mono text-slate-500 ml-0.5 sm:ml-1">/100</span>
+              <span className="text-sm sm:text-base font-mono text-[#777181] ml-1">/100</span>
             </div>
-            <div
-              className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[9px] min-[360px]:text-[10px] font-mono font-bold tracking-wider uppercase border shadow-sm ${theme.badgeBg} ${theme.badgeBorder} ${theme.badgeText}`}
-            >
-              <IconComponent className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+            <div className={`inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wide ${theme.textClass}`}>
+              <IconComponent className="w-3.5 h-3.5 shrink-0" />
               <span>{riskLevel}</span>
             </div>
           </div>
         )}
       </div>
 
-      {/* 6 Orbital Satellite Nodes positioned via fluid percentages */}
       {ORBITAL_NODES.map((node, index) => {
         const rad = (node.angle * Math.PI) / 180;
         const xPercent = ((center + orbitRadius * Math.cos(rad)) / baseDim) * 100;
         const yPercent = ((center + orbitRadius * Math.sin(rad)) / baseDim) * 100;
         const NodeIcon = node.icon;
 
-        // Is this node active during analysis?
         const isCurrentlyInspecting = isAnalyzing && activeStageIndex === index;
         const hasPassedInspection = isAnalyzing && activeStageIndex > index;
-        // In result view, does it have a triggered threat signal?
         const isTriggered = !isAnalyzing && isCategoryTriggered(node.category);
 
         return (
@@ -264,22 +244,21 @@ export const InvestigationRing: React.FC<InvestigationRingProps> = ({
             className="group cursor-pointer z-20 touch-manipulation"
           >
             <div
-              className={`w-7 h-7 min-[360px]:w-8 min-[360px]:h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center transition-all duration-300 border ${
+              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 border shadow-sm ${
                 isCurrentlyInspecting
-                  ? 'bg-cyan-950 border-cyan-400 text-cyan-300 scale-115 shadow-[0_0_15px_rgba(6,182,212,0.6)] animate-pulse'
+                  ? 'bg-[#E94D9B] border-[#C92D7D] text-white scale-110'
                   : isTriggered
-                  ? 'bg-red-950/90 border-red-500 text-red-400 shadow-[0_0_12px_rgba(239,68,68,0.4)]'
+                  ? 'bg-[#E5484D]/10 border-[#E5484D]/50 text-[#E5484D]'
                   : hasPassedInspection
-                  ? 'bg-slate-900 border-slate-700 text-cyan-400'
-                  : 'bg-slate-900/90 border-slate-800 text-slate-400 hover:border-slate-600 hover:text-slate-200'
+                  ? 'bg-[#FCE7F3] border-[#E94D9B]/40 text-[#C92D7D]'
+                  : 'bg-white border-[#F0E5EC] text-[#777181] hover:border-[#E94D9B]/50 hover:text-[#252033]'
               }`}
             >
-              <NodeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <NodeIcon className="w-4 h-4" />
             </div>
 
-            {/* Micro Tag Tooltip on Hover / Touch */}
             <div
-              className={`absolute -bottom-6 left-1/2 -translate-x-1/2 transition-opacity pointer-events-none whitespace-nowrap bg-slate-900 px-2 py-0.5 rounded border border-slate-800 text-[9px] sm:text-[10px] font-mono text-slate-300 z-30 shadow-lg ${
+              className={`absolute -bottom-7 left-1/2 -translate-x-1/2 transition-opacity pointer-events-none whitespace-nowrap bg-[#252033] text-white px-2 py-0.5 rounded-md text-[10px] font-medium z-30 shadow-md ${
                 hoveredNode?.id === node.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
               }`}
             >

@@ -3,9 +3,6 @@ import { AnalysisResult, RiskSignal } from '../types.js';
 import {
   Clock,
   AlertTriangle,
-  AlertOctagon,
-  ShieldAlert,
-  ShieldCheck,
   CreditCard,
   Briefcase,
   UserCheck,
@@ -14,15 +11,8 @@ import {
   ChevronRight,
   ChevronLeft,
   Quote,
-  Flame,
-  ArrowRight,
-  Layers,
-  Sparkles,
-  Sliders,
-  AlignLeft,
-  Eye
+  AlignLeft
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 
 interface ThreatTimelineProps {
   result: AnalysisResult;
@@ -46,22 +36,18 @@ export interface TimelineMilestone {
   quoteText: string;
   whatDetected: string;
   psychologicalIntent: string;
-  signalRef?: RiskSignal;
 }
 
 export const ThreatTimeline: React.FC<ThreatTimelineProps> = ({ result }) => {
   const [activeStepIndex, setActiveStepIndex] = useState<number>(0);
   const [viewMode, setViewMode] = useState<'stepper' | 'stream'>('stepper');
-  const [showFullTextContext, setShowFullTextContext] = useState<boolean>(true);
 
   const fullText = result.rawInputText || result.inputSnippet || '';
 
-  // Extract chronological threat milestones based on input text sequence
   const milestones: TimelineMilestone[] = useMemo(() => {
     const rawText = fullText;
     const lowerText = rawText.toLowerCase();
 
-    // Map each signal to its earliest occurrence in the text
     const matchedItems: {
       signal: RiskSignal;
       earliestPos: number;
@@ -83,7 +69,6 @@ export const ThreatTimeline: React.FC<ThreatTimelineProps> = ({ result }) => {
         }
       }
 
-      // If exact quote wasn't located verbatim, search by signal name or whatDetected keywords
       if (earliestPos === Infinity) {
         const keywords = sig.name.toLowerCase().split(/\s+/).filter((w) => w.length > 4);
         for (const kw of keywords) {
@@ -96,7 +81,6 @@ export const ThreatTimeline: React.FC<ThreatTimelineProps> = ({ result }) => {
         }
       }
 
-      // Default fallback position based on category
       if (earliestPos === Infinity) {
         if (sig.category === 'EMPLOYMENT' || sig.category === 'IDENTITY') earliestPos = 20;
         else if (sig.category === 'URGENCY') earliestPos = Math.floor(rawText.length * 0.4);
@@ -112,10 +96,8 @@ export const ThreatTimeline: React.FC<ThreatTimelineProps> = ({ result }) => {
       });
     });
 
-    // Sort strictly by position in the input text (chronological flow)
     matchedItems.sort((a, b) => a.earliestPos - b.earliestPos);
 
-    // Calculate cumulative threat trajectory
     let runningScore = 0;
     const items: TimelineMilestone[] = [];
 
@@ -124,32 +106,30 @@ export const ThreatTimeline: React.FC<ThreatTimelineProps> = ({ result }) => {
       const pts = sig.scoreWeight || 20;
       runningScore = Math.min(100, runningScore + pts);
 
-      // Paragraph calculation
       const textUpToPos = rawText.slice(0, item.earliestPos);
       const paragraphIndex = textUpToPos.split(/\n\s*\n/).length;
       const percentage = rawText.length > 0 ? Math.min(100, Math.round((item.earliestPos / rawText.length) * 100)) : 50;
 
-      // Determine phase label & psychological intent
-      let phaseName = `PHASE 0${index + 1}`;
+      let phaseName = `Stage 0${index + 1}`;
       let stageTitle = sig.name;
       let psychologicalIntent = sig.whyItMatters;
 
       if (index === 0 && (sig.category === 'EMPLOYMENT' || sig.category === 'IDENTITY')) {
-        phaseName = 'PHASE 01: THE PRETEXT HOOK';
+        phaseName = 'Stage 01 · Pretext Hook';
         stageTitle = 'Trust Acquisition & Bait';
-        psychologicalIntent = 'Lowers victim defenses through perceived authority, flattery, or an unvetted instant selection.';
+        psychologicalIntent = 'Lowers defenses through perceived authority, flattery, or an unvetted instant selection.';
       } else if (sig.category === 'URGENCY') {
-        phaseName = `PHASE 0${index + 1}: PSYCHOLOGICAL COERCION`;
+        phaseName = `Stage 0${index + 1} · Urgency Pressure`;
         stageTitle = 'Manufactured Deadline Pressure';
-        psychologicalIntent = 'Pre-empts rational verification and third-party consultation by creating an artificial expiration countdown.';
+        psychologicalIntent = 'Prevents verification by creating an artificial expiration countdown.';
       } else if (sig.category === 'PAYMENT' || sig.category === 'FINANCIAL') {
-        phaseName = `PHASE 0${index + 1}: FINANCIAL REQUISITION`;
-        stageTitle = 'The Monetary Extraction Trap';
-        psychologicalIntent = 'Demands non-refundable transfer (UPI/GPay/Deposit/Vendor Checkout) framed as routine or refundable.';
+        phaseName = `Stage 0${index + 1} · Financial Demand`;
+        stageTitle = 'Monetary Extraction Trap';
+        psychologicalIntent = 'Demands an upfront transfer (UPI, deposit, or fee) framed as refundable or mandatory.';
       } else if (index === matchedItems.length - 1 && runningScore >= 80) {
-        phaseName = `PHASE 0${index + 1}: THE FORFEITURE ULTIMATUM`;
-        stageTitle = 'Consequence Threat & Final Push';
-        psychologicalIntent = 'Uses threat of cancellation, legal penalty, or lost opportunity to force immediate compliance.';
+        phaseName = `Stage 0${index + 1} · Final Ultimatum`;
+        stageTitle = 'Consequence Threat';
+        psychologicalIntent = 'Uses threat of cancellation or legal action to force immediate compliance.';
       }
 
       items.push({
@@ -169,17 +149,15 @@ export const ThreatTimeline: React.FC<ThreatTimelineProps> = ({ result }) => {
         },
         quoteText: item.bestQuote,
         whatDetected: sig.whatDetected,
-        psychologicalIntent,
-        signalRef: sig
+        psychologicalIntent
       });
     });
 
-    // If no signals were identified, generate an informational timeline item
     if (items.length === 0) {
       items.push({
         id: 'milestone-empty',
         stepNumber: 1,
-        phaseName: 'PHASE 01: INGESTION & SCAN',
+        phaseName: 'Stage 01 · Baseline Scan',
         stageTitle: 'Baseline Content Evaluation',
         category: 'HOOK',
         severity: 'LOW',
@@ -187,8 +165,8 @@ export const ThreatTimeline: React.FC<ThreatTimelineProps> = ({ result }) => {
         cumulativeScore: result.threatScore,
         textPosition: { startChar: 0, endChar: rawText.length, percentage: 100, paragraphIndex: 1 },
         quoteText: rawText.slice(0, 150) || 'Analyzed content',
-        whatDetected: 'No critical advance-fee or high-threat triggers were isolated in sequential analysis.',
-        psychologicalIntent: 'The communication appears conversational or standard without obvious deceptive progression.',
+        whatDetected: 'No advance-fee or high-threat triggers were isolated in sequential analysis.',
+        psychologicalIntent: 'The communication appears standard without obvious deceptive escalation.'
       });
     }
 
@@ -197,17 +175,16 @@ export const ThreatTimeline: React.FC<ThreatTimelineProps> = ({ result }) => {
 
   const activeMilestone = milestones[activeStepIndex] || milestones[0];
 
-  const getSeverityBadgeClass = (severity: RiskSignal['severity']) => {
+  const getSeverityTextColor = (severity: RiskSignal['severity']) => {
     switch (severity) {
       case 'CRITICAL':
-        return 'bg-red-950/80 text-red-400 border-red-500/60 shadow-[0_0_10px_rgba(239,68,68,0.2)]';
+        return 'text-[#E5484D]';
       case 'HIGH':
-        return 'bg-orange-950/80 text-orange-400 border-orange-500/60 shadow-[0_0_10px_rgba(249,115,22,0.2)]';
       case 'MODERATE':
-        return 'bg-amber-950/80 text-amber-400 border-amber-500/60';
+        return 'text-[#E99A24]';
       case 'LOW':
       default:
-        return 'bg-emerald-950/80 text-emerald-400 border-emerald-500/60';
+        return 'text-[#16A36A]';
     }
   };
 
@@ -233,101 +210,63 @@ export const ThreatTimeline: React.FC<ThreatTimelineProps> = ({ result }) => {
   };
 
   return (
-    <section id="threat-timeline-section" className="space-y-4 sm:space-y-6">
-      {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3 sm:pb-4">
-        <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
-          <div className="p-2 rounded-xl bg-cyan-950/80 border border-cyan-800/50 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.15)] flex-shrink-0">
-            <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
+    <section id="threat-timeline-section" className="rounded-2xl bg-white border border-[#F0E5EC] p-5 sm:p-7 shadow-sm space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F0E5EC] pb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#FCE7F3] text-[#C92D7D] flex items-center justify-center shrink-0">
+            <Clock className="w-5 h-5" />
           </div>
-          <div className="min-w-0">
-            <div className="flex items-center space-x-2 flex-wrap">
-              <span className="text-[10px] sm:text-[11px] font-mono tracking-widest uppercase text-cyan-400 font-bold">
-                CHRONOLOGICAL ATTACK ANATOMY
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono bg-slate-900 border border-slate-800 text-slate-300">
-                {milestones.length} Stages
-              </span>
-            </div>
-            <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white font-mono tracking-tight mt-0.5 truncate">
-              THREAT TIMELINE
+          <div>
+            <h3 className="text-lg font-bold text-[#252033]">
+              Attack Anatomy Timeline
             </h3>
+            <p className="text-xs text-[#777181]">
+              Step-by-step progression of deceptive triggers across your submission · {milestones.length} stages
+            </p>
           </div>
         </div>
 
-        {/* View Mode Toggle & Text Context Button */}
-        <div className="flex items-center space-x-2 self-stretch sm:self-auto justify-between sm:justify-end flex-shrink-0">
+        <div className="p-1 rounded-xl bg-[#FFF8FC] border border-[#F0E5EC] inline-flex items-center text-xs font-medium self-start sm:self-auto">
           <button
             type="button"
-            onClick={() => setShowFullTextContext(!showFullTextContext)}
-            className={`min-h-[40px] flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-mono border transition-all cursor-pointer touch-manipulation ${
-              showFullTextContext
-                ? 'bg-cyan-950/60 border-cyan-500/40 text-cyan-300'
-                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+            onClick={() => setViewMode('stepper')}
+            className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+              viewMode === 'stepper' ? 'bg-white text-[#C92D7D] font-semibold shadow-sm' : 'text-[#777181] hover:text-[#252033]'
             }`}
           >
-            <Eye className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="hidden sm:inline">Text In Context</span>
-            <span className="sm:hidden">Context</span>
+            Step-by-Step
           </button>
-
-          <div className="p-0.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center text-xs font-mono">
-            <button
-              type="button"
-              onClick={() => setViewMode('stepper')}
-              className={`min-h-[38px] px-3 py-1 rounded-md transition-colors cursor-pointer touch-manipulation ${
-                viewMode === 'stepper'
-                  ? 'bg-cyan-500/20 text-cyan-300 font-bold shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Step-by-Step
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('stream')}
-              className={`min-h-[38px] px-3 py-1 rounded-md transition-colors cursor-pointer touch-manipulation ${
-                viewMode === 'stream'
-                  ? 'bg-cyan-500/20 text-cyan-300 font-bold shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Full Stream
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setViewMode('stream')}
+            className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+              viewMode === 'stream' ? 'bg-white text-[#C92D7D] font-semibold shadow-sm' : 'text-[#777181] hover:text-[#252033]'
+            }`}
+          >
+            Full Stream
+          </button>
         </div>
       </div>
 
-      {/* STEPPER MODE: Interactive Scrubbing Track */}
       {viewMode === 'stepper' && (
-        <div className="space-y-4 sm:space-y-6">
-          {/* Progress Bar / Scrub Track */}
-          <div className="rounded-2xl bg-[#080d19] border border-slate-800 p-4 sm:p-6 shadow-xl">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 text-xs font-mono text-slate-400 mb-3 sm:mb-4">
-              <span className="text-cyan-400 font-bold tracking-wider text-[11px] sm:text-xs">
-                CHRONOLOGICAL READING PROGRESSION
+        <div className="space-y-6">
+          {/* Interactive Track */}
+          <div className="p-4 sm:p-5 rounded-xl bg-[#FFF8FC] border border-[#F0E5EC] space-y-4">
+            <div className="flex items-center justify-between text-xs text-[#777181]">
+              <span className="font-semibold text-[#252033]">Progression Track</span>
+              <span className="font-mono tabular-nums text-[#C92D7D] font-semibold">
+                +{activeMilestone.pointsContribution} pts in stage {activeMilestone.stepNumber}
               </span>
-              <div className="flex items-center space-x-2 text-[11px] sm:text-xs">
-                <span>Threat Velocity:</span>
-                <span className="text-red-400 font-bold flex items-center space-x-1">
-                  <Flame className="w-3.5 h-3.5" />
-                  <span>+{activeMilestone.pointsContribution} pts in Phase 0{activeMilestone.stepNumber}</span>
-                </span>
-              </div>
             </div>
 
-            {/* Stepper Track Nodes with generous touch-targets */}
-            <div className="relative pt-3 sm:pt-4 pb-2 overflow-x-auto">
-              {/* Connecting conduit line */}
-              <div className="absolute top-7 sm:top-8 left-4 right-4 h-1 bg-slate-800 rounded-full pointer-events-none" />
+            <div className="relative pt-2 pb-1">
+              <div className="absolute top-6 left-4 right-4 h-1 bg-[#F0E5EC] rounded-full" />
               <div
-                className="absolute top-7 sm:top-8 left-4 h-1 bg-gradient-to-r from-cyan-500 via-amber-400 to-red-500 rounded-full transition-all duration-300 pointer-events-none"
-                style={{
-                  width: `${(activeStepIndex / Math.max(1, milestones.length - 1)) * 92}%`
-                }}
+                className="absolute top-6 left-4 h-1 bg-gradient-to-r from-[#E94D9B] to-[#C92D7D] rounded-full transition-all duration-300"
+                style={{ width: `${(activeStepIndex / Math.max(1, milestones.length - 1)) * 92}%` }}
               />
 
-              <div className="relative flex justify-between items-center z-10 min-w-[280px]">
+              <div className="relative flex justify-between items-center z-10">
                 {milestones.map((m, idx) => {
                   const isActive = idx === activeStepIndex;
                   const isPassed = idx < activeStepIndex;
@@ -338,26 +277,21 @@ export const ThreatTimeline: React.FC<ThreatTimelineProps> = ({ result }) => {
                       key={m.id}
                       type="button"
                       onClick={() => setActiveStepIndex(idx)}
-                      className="group flex flex-col items-center cursor-pointer focus:outline-none touch-manipulation min-w-[44px] min-h-[44px] justify-center"
-                      aria-label={`Phase ${m.stepNumber}: ${m.stageTitle}`}
+                      className="flex flex-col items-center cursor-pointer min-w-[44px]"
+                      aria-label={`Stage ${m.stepNumber}: ${m.stageTitle}`}
                     >
                       <div
-                        className={`w-8 h-8 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center transition-all duration-200 border ${
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all border ${
                           isActive
-                            ? 'bg-cyan-950 border-cyan-400 text-cyan-300 scale-110 shadow-[0_0_20px_rgba(6,182,212,0.4)] ring-2 ring-cyan-500/20'
+                            ? 'bg-gradient-to-br from-[#E94D9B] to-[#C92D7D] border-[#C92D7D] text-white scale-110 shadow-md'
                             : isPassed
-                            ? 'bg-slate-900 border-slate-700 text-slate-300'
-                            : 'bg-slate-900/80 border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300'
+                            ? 'bg-[#FCE7F3] border-[#E94D9B]/50 text-[#C92D7D]'
+                            : 'bg-white border-[#F0E5EC] text-[#777181] hover:border-[#E94D9B]/40'
                         }`}
                       >
-                        <Icon className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+                        <Icon className="w-4 h-4" />
                       </div>
-
-                      <span
-                        className={`text-[9px] sm:text-[10px] font-mono mt-1.5 font-bold tracking-tight ${
-                          isActive ? 'text-cyan-400' : 'text-slate-500 group-hover:text-slate-400'
-                        }`}
-                      >
+                      <span className={`text-[11px] font-mono tabular-nums mt-1.5 font-semibold ${isActive ? 'text-[#C92D7D]' : 'text-[#777181]'}`}>
                         0{m.stepNumber}
                       </span>
                     </button>
@@ -366,19 +300,18 @@ export const ThreatTimeline: React.FC<ThreatTimelineProps> = ({ result }) => {
               </div>
             </div>
 
-            {/* Stepper Navigation Buttons with 44px touch targets */}
-            <div className="flex items-center justify-between pt-3 sm:pt-4 border-t border-slate-800/80 mt-3 sm:mt-4 text-xs font-mono">
+            <div className="flex items-center justify-between pt-3 border-t border-[#F0E5EC] text-xs">
               <button
                 type="button"
                 disabled={activeStepIndex === 0}
                 onClick={() => setActiveStepIndex((prev) => Math.max(0, prev - 1))}
-                className="min-h-[44px] flex items-center space-x-1.5 px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors touch-manipulation"
+                className="min-h-[38px] inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white border border-[#F0E5EC] text-[#252033] font-medium disabled:opacity-40 cursor-pointer"
               >
-                <ChevronLeft className="w-4 h-4 flex-shrink-0" />
-                <span className="text-[11px] sm:text-xs">Prev</span>
+                <ChevronLeft className="w-4 h-4" />
+                <span>Previous</span>
               </button>
 
-              <span className="text-slate-400 text-[10px] sm:text-[11px]">
+              <span className="font-mono tabular-nums text-[#777181]">
                 {activeStepIndex + 1} / {milestones.length}
               </span>
 
@@ -386,86 +319,59 @@ export const ThreatTimeline: React.FC<ThreatTimelineProps> = ({ result }) => {
                 type="button"
                 disabled={activeStepIndex === milestones.length - 1}
                 onClick={() => setActiveStepIndex((prev) => Math.min(milestones.length - 1, prev + 1))}
-                className="min-h-[44px] flex items-center space-x-1.5 px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors touch-manipulation"
+                className="min-h-[38px] inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white border border-[#F0E5EC] text-[#252033] font-medium disabled:opacity-40 cursor-pointer"
               >
-                <span className="text-[11px] sm:text-xs">Next</span>
-                <ChevronRight className="w-4 h-4 flex-shrink-0" />
+                <span>Next</span>
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          {/* Active Milestone Deep Dive Card */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
-            {/* Left 7 cols: Forensic Anatomy of Current Phase */}
-            <div className="lg:col-span-7 rounded-2xl bg-[#080d19] border border-cyan-500/30 p-4 sm:p-6 shadow-2xl space-y-4 sm:space-y-5 relative overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
-                <div className="flex items-center space-x-2">
-                  <span className="text-[11px] sm:text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider">
-                    {activeMilestone.phaseName}
-                  </span>
-                  <span className="text-slate-600">|</span>
-                  <span className="text-[10px] sm:text-[11px] font-mono text-slate-400">
-                    Paragraph {activeMilestone.textPosition.paragraphIndex}
-                  </span>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <span className={`text-[9px] sm:text-[10px] font-mono px-2 py-0.5 rounded-full border font-bold uppercase ${getSeverityBadgeClass(activeMilestone.severity)}`}>
-                    {activeMilestone.severity}
-                  </span>
-                  <span className="text-[11px] sm:text-xs font-mono text-cyan-300 bg-cyan-950/70 px-2 py-0.5 rounded border border-cyan-800/60 font-semibold">
-                    +{activeMilestone.pointsContribution} pts
-                  </span>
-                </div>
+          {/* Detail Split */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-7 space-y-4">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-[#C92D7D]">{activeMilestone.phaseName}</span>
+                <span className={`font-semibold ${getSeverityTextColor(activeMilestone.severity)}`}>
+                  {activeMilestone.severity} · +{activeMilestone.pointsContribution} pts
+                </span>
               </div>
 
-              {/* Title & Detected Pattern */}
               <div>
-                <h4 className="text-base sm:text-lg lg:text-xl font-bold font-mono text-white tracking-tight break-words">
-                  {activeMilestone.stageTitle}
-                </h4>
-                <p className="text-xs sm:text-sm text-slate-300 font-sans mt-1 leading-relaxed break-words">
-                  {activeMilestone.whatDetected}
-                </p>
+                <h4 className="text-lg font-bold text-[#252033]">{activeMilestone.stageTitle}</h4>
+                <p className="text-sm text-[#777181] mt-1 leading-relaxed">{activeMilestone.whatDetected}</p>
               </div>
 
-              {/* Observable Quote Box */}
-              <div className="p-3.5 sm:p-4 rounded-xl bg-slate-950/80 border border-amber-500/30 space-y-1.5 shadow-inner">
-                <div className="flex items-center space-x-2 text-[9px] sm:text-[10px] font-mono uppercase tracking-wider text-amber-400 font-bold">
-                  <Quote className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span>Observable Excerpt from Text:</span>
+              <div className="p-4 rounded-xl bg-[#FCE7F3]/40 border border-[#F0E5EC] space-y-1.5">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-[#C92D7D]">
+                  <Quote className="w-3.5 h-3.5 shrink-0" />
+                  <span>Observed Excerpt</span>
                 </div>
-                <p className="text-xs sm:text-sm font-mono text-amber-200 font-medium italic leading-relaxed break-words break-all">
+                <p className="text-xs sm:text-sm font-mono text-[#252033] italic leading-relaxed break-words">
                   &ldquo;{activeMilestone.quoteText}&rdquo;
                 </p>
               </div>
 
-              {/* Psychological Intent Deconstruction */}
-              <div className="p-3 sm:p-4 rounded-xl bg-slate-900/50 border border-slate-800 space-y-1">
-                <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wider text-cyan-400 font-bold block">
-                  ATTACK INTENT &amp; PSYCHOLOGICAL MECHANIC:
-                </span>
-                <p className="text-xs sm:text-sm text-slate-300 font-sans leading-relaxed break-words">
-                  {activeMilestone.psychologicalIntent}
-                </p>
+              <div className="space-y-1">
+                <span className="text-xs font-semibold text-[#252033] block">Psychological Intent</span>
+                <p className="text-sm text-[#777181] leading-relaxed">{activeMilestone.psychologicalIntent}</p>
               </div>
 
-              {/* Cumulative Threat Bar at this Phase */}
-              <div className="space-y-1.5 pt-1 sm:pt-2">
-                <div className="flex items-center justify-between text-[11px] sm:text-xs font-mono">
-                  <span className="text-slate-400">Cumulative Threat:</span>
-                  <span className="font-bold text-white font-mono">
-                    {activeMilestone.cumulativeScore} <span className="text-slate-500 text-[10px]">/ 100</span>
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#777181]">Cumulative Risk</span>
+                  <span className="font-mono font-bold tabular-nums text-[#252033]">
+                    {activeMilestone.cumulativeScore} / 100
                   </span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-slate-900 overflow-hidden border border-slate-800">
+                <div className="w-full h-2 rounded-full bg-[#FFF8FC] overflow-hidden border border-[#F0E5EC]">
                   <div
-                    className={`h-full transition-all duration-500 ${
+                    className={`h-full transition-all duration-300 rounded-full ${
                       activeMilestone.cumulativeScore >= 80
-                        ? 'bg-red-500'
+                        ? 'bg-[#E5484D]'
                         : activeMilestone.cumulativeScore >= 50
-                        ? 'bg-amber-400'
-                        : 'bg-cyan-400'
+                        ? 'bg-[#E99A24]'
+                        : 'bg-[#E94D9B]'
                     }`}
                     style={{ width: `${activeMilestone.cumulativeScore}%` }}
                   />
@@ -473,43 +379,32 @@ export const ThreatTimeline: React.FC<ThreatTimelineProps> = ({ result }) => {
               </div>
             </div>
 
-            {/* Right 5 cols: Live Text In Context Viewer */}
-            <div className="lg:col-span-5 rounded-2xl bg-[#080d19] border border-slate-800 p-4 sm:p-6 flex flex-col justify-between space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                  <div className="flex items-center space-x-2 text-xs font-mono text-slate-300">
-                    <AlignLeft className="w-4 h-4 text-cyan-400" />
-                    <span className="font-bold uppercase text-[11px] sm:text-xs">Evidence In Text Context</span>
-                  </div>
-                  <span className="text-[10px] font-mono text-slate-500">
-                    ~{activeMilestone.textPosition.percentage}% of message
+            <div className="lg:col-span-5 p-4 rounded-xl bg-[#FFF8FC] border border-[#F0E5EC] flex flex-col justify-between space-y-3">
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between text-xs border-b border-[#F0E5EC] pb-2">
+                  <span className="font-semibold text-[#252033] inline-flex items-center gap-1.5">
+                    <AlignLeft className="w-3.5 h-3.5 text-[#E94D9B]" />
+                    <span>Evidence in Context</span>
                   </span>
+                  <span className="font-mono text-[#777181]">~{activeMilestone.textPosition.percentage}%</span>
                 </div>
 
-                <p className="text-[11px] sm:text-xs text-slate-400 font-sans">
-                  Notice how deceptive cues build upon preceding sentences:
-                </p>
-
-                {/* Highlighted text preview box */}
-                <div className="p-3 rounded-xl bg-[#050811] border border-slate-800 max-h-48 sm:max-h-64 overflow-y-auto font-mono text-xs text-slate-300 leading-relaxed whitespace-pre-wrap select-text break-words">
+                <div className="p-3 rounded-xl bg-white border border-[#F0E5EC] max-h-56 overflow-y-auto font-mono text-xs text-[#252033] leading-relaxed whitespace-pre-wrap break-words">
                   {fullText.length > 0 ? (
                     (() => {
                       const quote = activeMilestone.quoteText;
                       const idx = fullText.toLowerCase().indexOf(quote.toLowerCase());
-                      if (idx === -1) {
-                        return fullText;
-                      }
+                      if (idx === -1) return fullText;
                       const before = fullText.slice(0, idx);
                       const match = fullText.slice(idx, idx + quote.length);
                       const after = fullText.slice(idx + quote.length);
-
                       return (
                         <>
-                          <span className="opacity-50">{before}</span>
-                          <mark className="bg-amber-500/30 text-amber-200 border-b-2 border-amber-400 px-1 py-0.5 rounded font-bold shadow-sm">
+                          <span className="opacity-55">{before}</span>
+                          <mark className="bg-[#FCE7F3] text-[#C92D7D] px-1 py-0.5 rounded font-bold">
                             {match}
                           </mark>
-                          <span className="opacity-50">{after}</span>
+                          <span className="opacity-55">{after}</span>
                         </>
                       );
                     })()
@@ -519,93 +414,55 @@ export const ThreatTimeline: React.FC<ThreatTimelineProps> = ({ result }) => {
                 </div>
               </div>
 
-              <div className="p-2.5 sm:p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-[10px] sm:text-[11px] font-mono text-slate-400 flex items-center justify-between">
-                <span>Vector: {activeMilestone.category}</span>
-                <span className="text-cyan-400 font-semibold">Stage 0{activeMilestone.stepNumber} of 0{milestones.length}</span>
+              <div className="text-xs text-[#777181] flex items-center justify-between font-mono">
+                <span>Paragraph {activeMilestone.textPosition.paragraphIndex}</span>
+                <span className="text-[#C92D7D] font-semibold">
+                  Stage 0{activeMilestone.stepNumber} / 0{milestones.length}
+                </span>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* STREAM MODE: Complete Chronological Timeline List */}
       {viewMode === 'stream' && (
-        <div className="space-y-4">
-          <div className="relative border-l-2 border-slate-800 ml-4 pl-6 sm:pl-8 space-y-6">
-            {milestones.map((m, idx) => {
-              const Icon = getCategoryIcon(m.category);
-              return (
-                <div key={m.id} className="relative group">
-                  {/* Step Dot */}
-                  <div className="absolute -left-[33px] sm:-left-[41px] top-4 w-7 h-7 rounded-full bg-[#050811] border-2 border-cyan-500/70 flex items-center justify-center text-[10px] font-mono font-bold text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.2)]">
-                    0{m.stepNumber}
+        <div className="divide-y divide-[#F0E5EC] border border-[#F0E5EC] rounded-2xl overflow-hidden">
+          {milestones.map((m) => {
+            const Icon = getCategoryIcon(m.category);
+            return (
+              <div key={m.id} className="p-5 bg-white space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-8 h-8 rounded-xl bg-[#FCE7F3] text-[#C92D7D] flex items-center justify-center shrink-0">
+                      <Icon className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <span className="text-xs font-semibold text-[#C92D7D] block">{m.phaseName}</span>
+                      <h4 className="text-sm font-bold text-[#252033]">{m.stageTitle}</h4>
+                    </div>
                   </div>
+                  <span className={`text-xs font-mono font-semibold ${getSeverityTextColor(m.severity)}`}>
+                    {m.severity} · +{m.pointsContribution} pts
+                  </span>
+                </div>
 
-                  {/* Card */}
-                  <div className="rounded-2xl bg-[#080d19] border border-slate-800 p-5 space-y-3.5 hover:border-slate-700 transition-all">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
-                      <div className="flex items-center space-x-2.5">
-                        <div className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-cyan-400">
-                          <Icon className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 font-bold block">
-                            {m.phaseName}
-                          </span>
-                          <h4 className="text-sm sm:text-base font-bold text-white font-mono">
-                            {m.stageTitle}
-                          </h4>
-                        </div>
-                      </div>
+                <p className="p-3 rounded-xl bg-[#FFF8FC] border border-[#F0E5EC] font-mono text-xs text-[#252033] italic">
+                  &ldquo;{m.quoteText}&rdquo;
+                </p>
 
-                      <div className="flex items-center space-x-2">
-                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border font-bold uppercase ${getSeverityBadgeClass(m.severity)}`}>
-                          {m.severity}
-                        </span>
-                        <span className="text-xs font-mono text-cyan-300 bg-cyan-950/70 px-2 py-0.5 rounded border border-cyan-800/60 font-semibold">
-                          +{m.pointsContribution} pts
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Excerpt */}
-                    <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 font-mono text-xs text-amber-200 italic">
-                      &ldquo;{m.quoteText}&rdquo;
-                    </div>
-
-                    {/* Details */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-sans">
-                      <div>
-                        <span className="text-[10px] font-mono text-slate-500 uppercase font-bold block mb-0.5">
-                          OBSERVED PATTERN:
-                        </span>
-                        <p className="text-slate-300 leading-relaxed">
-                          {m.whatDetected}
-                        </p>
-                      </div>
-
-                      <div>
-                        <span className="text-[10px] font-mono text-cyan-400 uppercase font-bold block mb-0.5">
-                          PSYCHOLOGICAL LEVERAGE:
-                        </span>
-                        <p className="text-slate-300 leading-relaxed">
-                          {m.psychologicalIntent}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Footer progress bar */}
-                    <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-[11px] font-mono text-slate-500">
-                      <span>Position in text: ~{m.textPosition.percentage}% (Paragraph {m.textPosition.paragraphIndex})</span>
-                      <span className="text-slate-300 font-bold">
-                        Cumulative Threat: <span className="text-cyan-400">{m.cumulativeScore}/100</span>
-                      </span>
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <span className="font-semibold text-[#252033] block mb-0.5">Observed Pattern</span>
+                    <p className="text-[#777181] leading-relaxed">{m.whatDetected}</p>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-[#C92D7D] block mb-0.5">Psychological Intent</span>
+                    <p className="text-[#777181] leading-relaxed">{m.psychologicalIntent}</p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </section>

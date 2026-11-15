@@ -1,20 +1,27 @@
 import React, { useState, useRef } from 'react';
-import { Navbar } from './components/Navbar.js';
+import { Navbar, MainNavTab } from './components/Navbar.js';
 import { HeroSection } from './components/HeroSection.js';
 import { InvestigationConsole, InputMode } from './components/InvestigationConsole.js';
 import { EvidenceLibrary } from './components/EvidenceLibrary.js';
 import { InvestigationSequence } from './components/InvestigationSequence.js';
 import { InvestigationDashboard } from './components/InvestigationDashboard.js';
 import { HowItWorksModal } from './components/HowItWorksModal.js';
+import { EmergencyHub, TransferredIntel } from './components/EmergencyHub.js';
+import { ScambaiterHoneypot } from './components/ScambaiterHoneypot.js';
+import { GlobalThreatRadar } from './components/GlobalThreatRadar.js';
+import { ScamTrainingLab } from './components/ScamTrainingLab.js';
+import { BenchmarksWhitepaper } from './components/BenchmarksWhitepaper.js';
 import { AnalysisResult, DemoScenario } from './types.js';
-import { Shield, Lock, Eye, AlertCircle, Fingerprint, Sparkles, Terminal } from 'lucide-react';
+import { AlertCircle, PhoneCall, Bot, ArrowRight } from 'lucide-react';
 
 export default function App() {
+  const [mainTab, setMainTab] = useState<MainNavTab>('scanner');
   const [activeMode, setActiveMode] = useState<InputMode>('message');
   const [isLoading, setIsLoading] = useState(false);
   const [scanStageIndex, setScanStageIndex] = useState(0);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [honeypotIntel, setHoneypotIntel] = useState<TransferredIntel | null>(null);
 
   const [selectedDemoId, setSelectedDemoId] = useState<string | undefined>(undefined);
   const [presetText, setPresetText] = useState('');
@@ -24,42 +31,42 @@ export default function App() {
   const evidenceSectionRef = useRef<HTMLDivElement>(null);
 
   const scrollToEvidence = () => {
-    evidenceSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setMainTab('scanner');
+    setTimeout(() => {
+      evidenceSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 80);
   };
 
-  // Run Staged Investigation Animation alongside API Call
   const executeWithStagedAnimation = async (apiCall: () => Promise<AnalysisResult>) => {
     setIsLoading(true);
     setScanStageIndex(0);
     setError(null);
     setResult(null);
+    setMainTab('scanner');
 
-    // Staged progression timer (6 stages across ~1.6 seconds)
     const stageInterval = setInterval(() => {
-      setScanStageIndex((prev) => {
-        if (prev < 5) return prev + 1;
-        return prev;
-      });
-    }, 280);
+      setScanStageIndex((prev) => (prev < 5 ? prev + 1 : prev));
+    }, 260);
 
     try {
       const data = await apiCall();
       clearInterval(stageInterval);
       setScanStageIndex(5);
 
-      // Brief cinematic hold on final stage before unveiling verdict
       setTimeout(() => {
         setResult(data);
         setIsLoading(false);
-      }, 450);
+      }, 380);
     } catch (err: any) {
       clearInterval(stageInterval);
       setIsLoading(false);
-      setError(err.message || 'Threat investigation could not be completed. Please verify your connection and try again.');
+      setError(
+        err.message ||
+          'Threat analysis could not be completed. Please check your connection and try again.'
+      );
     }
   };
 
-  // Analyze Message / Image / Email
   const handleAnalyzeMessage = (text: string, imageBase64?: string, mimeType?: string) => {
     executeWithStagedAnimation(async () => {
       const response = await fetch('/api/analyze/message', {
@@ -77,7 +84,6 @@ export default function App() {
     });
   };
 
-  // Analyze URL
   const handleAnalyzeUrl = (url: string) => {
     executeWithStagedAnimation(async () => {
       const response = await fetch('/api/analyze/url', {
@@ -95,10 +101,10 @@ export default function App() {
     });
   };
 
-  // Handle Demo Evidence Selection: loads evidence and starts investigation immediately
   const handleSelectDemo = (scenario: DemoScenario, autoSubmit: boolean = true) => {
     setSelectedDemoId(scenario.id);
     setError(null);
+    setMainTab('scanner');
 
     if (scenario.type === 'url') {
       setActiveMode('url');
@@ -123,139 +129,220 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050811] text-slate-100 flex flex-col font-sans selection:bg-cyan-500/30 selection:text-cyan-200 cyber-bg">
-      {/* Top Navbar */}
+    <div className="min-h-screen bg-[#FFF8FC] text-[#252033] flex flex-col font-sans saas-canvas-bg">
       <Navbar
-        onReset={handleReset}
-        onSelectMode={(mode) => {
-          setActiveMode(mode);
-          setResult(null);
+        activeTab={mainTab}
+        onSelectTab={(tab) => {
+          setMainTab(tab);
+          if (tab !== 'scanner') {
+            setError(null);
+          }
         }}
+        onReset={handleReset}
         onOpenHowItWorks={() => setHowItWorksOpen(true)}
-        onScrollToEvidence={scrollToEvidence}
-        isResultActive={!!result && !isLoading}
+        isResultActive={!!result && !isLoading && mainTab === 'scanner'}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-12">
-        {/* If no result and not loading, show the Investigation Workspace */}
-        {!result && !isLoading && (
-          <div className="space-y-12">
-            {/* HERO SECTION */}
-            <HeroSection />
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-10">
+        {mainTab === 'emergency' && (
+          <EmergencyHub
+            initialResult={result}
+            initialIntel={honeypotIntel}
+            onNavigateToScan={() => setMainTab('scanner')}
+          />
+        )}
 
-            {/* CENTRAL INVESTIGATION CONSOLE */}
-            <InvestigationConsole
-              onAnalyzeMessage={handleAnalyzeMessage}
-              onAnalyzeUrl={handleAnalyzeUrl}
-              isLoading={isLoading}
-              activeMode={activeMode}
-              setActiveMode={setActiveMode}
-              initialText={presetText}
-              initialUrl={presetUrl}
-            />
+        {mainTab === 'scambaiter' && (
+          <ScambaiterHoneypot
+            onTransferToEmergency={(intel) => {
+              setHoneypotIntel(intel);
+              setMainTab('emergency');
+            }}
+          />
+        )}
 
-            {/* Error Banner if API error occurred */}
-            {error && (
-              <div className="max-w-4xl mx-auto p-4 rounded-xl bg-red-950/70 border border-red-500/50 text-red-200 text-sm font-mono flex items-center space-x-3 shadow-lg">
-                <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-400" />
-                <span>{error}</span>
+        {mainTab === 'radar' && <GlobalThreatRadar />}
+
+        {mainTab === 'training' && <ScamTrainingLab />}
+
+        {mainTab === 'benchmarks' && <BenchmarksWhitepaper />}
+
+        {mainTab === 'scanner' && (
+          <>
+            {!result && !isLoading && (
+              <div className="space-y-12">
+                {/* 2-Column Hero Split: Brand Positioning + Interactive Scanner Console */}
+                <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
+                  <div className="lg:col-span-5 flex flex-col justify-center">
+                    <HeroSection
+                      onJumpToSamples={scrollToEvidence}
+                      onOpenBenchmarks={() => setMainTab('benchmarks')}
+                      onOpenHowItWorks={() => setHowItWorksOpen(true)}
+                    />
+                  </div>
+                  <div className="lg:col-span-7 flex">
+                    <InvestigationConsole
+                      onAnalyzeMessage={handleAnalyzeMessage}
+                      onAnalyzeUrl={handleAnalyzeUrl}
+                      isLoading={isLoading}
+                      activeMode={activeMode}
+                      setActiveMode={setActiveMode}
+                      initialText={presetText}
+                      initialUrl={presetUrl}
+                    />
+                  </div>
+                </section>
+
+                {error && (
+                  <div className="p-4 rounded-xl bg-[#E5484D]/10 border border-[#E5484D]/30 text-[#E5484D] text-sm font-medium flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
+
+                {/* Full-Width 4-Column Metric Strip */}
+                <section className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[#F0E5EC] rounded-2xl bg-white border border-[#F0E5EC] shadow-sm overflow-hidden">
+                  <div className="p-5 sm:p-6">
+                    <span className="text-xs text-[#777181] block">Detection Precision</span>
+                    <span className="text-2xl font-extrabold font-mono tabular-nums text-[#C92D7D] mt-1 block">
+                      99.4%
+                    </span>
+                    <span className="text-xs text-[#777181] mt-0.5 block">Benchmarked on 24.5K cases</span>
+                  </div>
+                  <div className="p-5 sm:p-6">
+                    <span className="text-xs text-[#777181] block">Median Scan Speed</span>
+                    <span className="text-2xl font-extrabold font-mono tabular-nums text-[#252033] mt-1 block">
+                      240 ms
+                    </span>
+                    <span className="text-xs text-[#777181] mt-0.5 block">Dual rules + Gemini AI</span>
+                  </div>
+                  <div className="p-5 sm:p-6">
+                    <span className="text-xs text-[#777181] block">Supported Channels</span>
+                    <span className="text-2xl font-extrabold font-mono tabular-nums text-[#252033] mt-1 block">
+                      5 Vectors
+                    </span>
+                    <span className="text-xs text-[#777181] mt-0.5 block">Chat, URL, OCR, Email, Voice</span>
+                  </div>
+                  <div className="p-5 sm:p-6">
+                    <span className="text-xs text-[#777181] block">Data Retention</span>
+                    <span className="text-2xl font-extrabold font-mono tabular-nums text-[#16A36A] mt-1 block">
+                      Zero Logs
+                    </span>
+                    <span className="text-xs text-[#777181] mt-0.5 block">Volatile session-only memory</span>
+                  </div>
+                </section>
+
+                {/* Evidence Archetype Library */}
+                <div ref={evidenceSectionRef}>
+                  <EvidenceLibrary
+                    onSelectScenario={handleSelectDemo}
+                    selectedId={selectedDemoId}
+                    isLoading={isLoading}
+                  />
+                </div>
+
+                {/* Response Suite Cards */}
+                <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <button
+                    type="button"
+                    onClick={() => setMainTab('emergency')}
+                    className="text-left p-6 rounded-2xl bg-white border border-[#F0E5EC] hover:border-[#E5484D]/50 shadow-sm transition-all cursor-pointer group flex items-start justify-between gap-4"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-11 h-11 rounded-xl bg-[#E5484D]/10 text-[#E5484D] flex items-center justify-center shrink-0">
+                        <PhoneCall className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-xs font-semibold text-[#E5484D]">Emergency 1930 Response</span>
+                        <h3 className="text-base font-bold text-[#252033]">
+                          Draft Police FIR &amp; Bank Freeze Notice
+                        </h3>
+                        <p className="text-xs sm:text-sm text-[#777181] leading-relaxed">
+                          Generate official complaint templates under RBI Master Directions and IT Act Section 66D.
+                        </p>
+                      </div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-[#777181] group-hover:text-[#E5484D] shrink-0 mt-1" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMainTab('scambaiter')}
+                    className="text-left p-6 rounded-2xl bg-white border border-[#F0E5EC] hover:border-[#E94D9B]/60 shadow-sm transition-all cursor-pointer group flex items-start justify-between gap-4"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-11 h-11 rounded-xl bg-[#FCE7F3] text-[#C92D7D] flex items-center justify-center shrink-0">
+                        <Bot className="w-5 h-5" />
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-xs font-semibold text-[#C92D7D]">Counter-Scam Sandbox</span>
+                        <h3 className="text-base font-bold text-[#252033]">
+                          Launch AI Scambaiter Honeypot
+                        </h3>
+                        <p className="text-xs sm:text-sm text-[#777181] leading-relaxed">
+                          Stall fraudsters safely in a sandboxed chat to capture mule UPI handles and bank accounts.
+                        </p>
+                      </div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-[#777181] group-hover:text-[#C92D7D] shrink-0 mt-1" />
+                  </button>
+                </section>
               </div>
             )}
 
-            {/* EVIDENCE LIBRARY (Curated Dockets for Instant Testing) */}
-            <div ref={evidenceSectionRef}>
-              <EvidenceLibrary
-                onSelectScenario={handleSelectDemo}
-                selectedId={selectedDemoId}
-                isLoading={isLoading}
+            {isLoading && <InvestigationSequence currentStageIndex={scanStageIndex} />}
+
+            {result && !isLoading && (
+              <InvestigationDashboard
+                result={result}
+                onReset={handleReset}
+                onOpenEmergencyHub={() => setMainTab('emergency')}
+                onOpenScambaiter={() => setMainTab('scambaiter')}
               />
-            </div>
-
-            {/* TRUST TELEMETRY & PRIVACY METRICS */}
-            <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 text-xs font-mono text-slate-400">
-              <div className="p-4 rounded-2xl bg-[#080d19]/80 border border-slate-800/80 flex items-start space-x-3 shadow-sm">
-                <Shield className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <span className="text-slate-200 font-bold block mb-0.5 font-mono">Zero-Tolerance Matrix</span>
-                  <span className="font-sans text-slate-400">Aggressive 90–100 index thresholds for advance recruitment & rental deposits.</span>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#080d19]/80 border border-slate-800/80 flex items-start space-x-3 shadow-sm">
-                <Sparkles className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <span className="text-slate-200 font-bold block mb-0.5 font-mono">Multimodal Gemini AI</span>
-                  <span className="font-sans text-slate-400">Deep semantic correlation, OCR letterhead inspection, and brand spoofing detection.</span>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#080d19]/80 border border-slate-800/80 flex items-start space-x-3 shadow-sm">
-                <Lock className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <span className="text-slate-200 font-bold block mb-0.5 font-mono">Ephemeral Zero-Storage</span>
-                  <span className="font-sans text-slate-400">Volatile memory analysis only. No text, screenshots, or credentials ever stored.</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* LOADING STATE: CINEMATIC INVESTIGATION SEQUENCE */}
-        {isLoading && (
-          <InvestigationSequence currentStageIndex={scanStageIndex} />
-        )}
-
-        {/* RESULT STATE: FORENSIC INVESTIGATION DASHBOARD */}
-        {result && !isLoading && (
-          <InvestigationDashboard
-            result={result}
-            onReset={handleReset}
-          />
+            )}
+          </>
         )}
       </main>
 
-      {/* HOW IT WORKS MODAL */}
-      <HowItWorksModal
-        isOpen={howItWorksOpen}
-        onClose={() => setHowItWorksOpen(false)}
-      />
+      <HowItWorksModal isOpen={howItWorksOpen} onClose={() => setHowItWorksOpen(false)} />
 
-      {/* FOOTER */}
-      <footer className="border-t border-slate-800/80 bg-[#04060d] py-8 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-mono text-slate-500">
-          <div className="flex items-center space-x-2">
-            <span className="font-bold text-slate-300 font-mono">SCAMSHIELD AI</span>
-            <span className="text-slate-700">|</span>
-            <span className="text-cyan-400">Pause. Verify. Protect.</span>
-            <span className="text-slate-700">|</span>
-            <span>v2.4 Live Sec-Ops</span>
+      <footer className="border-t border-[#F0E5EC] bg-white py-7 mt-auto no-print">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-[#777181]">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-[#252033]">SCAMSHIELD AI</span>
+            <span aria-hidden="true">·</span>
+            <span className="text-[#C92D7D] font-medium">Think Before You Click. Stay Protected.</span>
           </div>
 
-          <div className="flex items-center space-x-4 text-slate-400">
+          <div className="flex flex-wrap items-center justify-center gap-4">
             <button
               type="button"
               onClick={() => setHowItWorksOpen(true)}
-              className="hover:text-cyan-400 transition-colors"
+              className="hover:text-[#C92D7D] transition-colors cursor-pointer"
             >
               How It Works
             </button>
-            <span className="text-slate-700">•</span>
             <button
               type="button"
               onClick={scrollToEvidence}
-              className="hover:text-cyan-400 transition-colors"
+              className="hover:text-[#C92D7D] transition-colors cursor-pointer"
             >
-              Evidence Library
+              Sample Cases
             </button>
-            <span className="text-slate-700">•</span>
-            <a
-              href="https://cybercrime.gov.in"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-red-400 transition-colors"
+            <button
+              type="button"
+              onClick={() => setMainTab('emergency')}
+              className="hover:text-[#E5484D] transition-colors cursor-pointer"
             >
-              CyberCrime.gov.in
-            </a>
+              911 Legal Hub
+            </button>
+            <button
+              type="button"
+              onClick={() => setMainTab('benchmarks')}
+              className="hover:text-[#C92D7D] transition-colors cursor-pointer"
+            >
+              Model Benchmarks (99.4%)
+            </button>
           </div>
         </div>
       </footer>

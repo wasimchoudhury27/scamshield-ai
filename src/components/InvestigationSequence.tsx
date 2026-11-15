@@ -1,7 +1,6 @@
 import React from 'react';
 import { InvestigationRing } from './InvestigationRing.js';
-import { CheckCircle2, Loader2, CircleDashed, Terminal, Shield } from 'lucide-react';
-import { motion } from 'motion/react';
+import { CheckCircle2, Loader2, CircleDashed } from 'lucide-react';
 
 export interface InvestigationStage {
   step: string;
@@ -10,12 +9,12 @@ export interface InvestigationStage {
 }
 
 export const INVESTIGATION_STAGES: InvestigationStage[] = [
-  { step: '01', label: 'SCANNING MESSAGE TOKENS', detail: 'Parsing text structure, regex boundaries & entities' },
-  { step: '02', label: 'CHECKING PAYMENT DEMANDS', detail: 'Scanning for deposits, UPI handles, onboarding fees, QR codes' },
-  { step: '03', label: 'CHECKING URGENCY SIGNALS', detail: 'Evaluating countdown ultimatums, hour limits & psychological coercion' },
-  { step: '04', label: 'IDENTIFYING IMPERSONATION', detail: 'Checking claimed company branding, unvetted direct selection & recruiter channels' },
-  { step: '05', label: 'INSPECTING INFRASTRUCTURE', detail: 'Evaluating domain age, TLD risk, spoofing targets & protocol security' },
-  { step: '06', label: 'BUILDING THREAT PROFILE', detail: 'Correlating multi-vector evidence weights & generating AI forensic assessment' }
+  { step: '01', label: 'Scanning Message Tokens', detail: 'Parsing text structure, entities, and contact handles' },
+  { step: '02', label: 'Checking Payment Demands', detail: 'Detecting advance deposits, UPI handles, and QR traps' },
+  { step: '03', label: 'Evaluating Urgency Signals', detail: 'Identifying countdown deadlines and coercion language' },
+  { step: '04', label: 'Checking Impersonation', detail: 'Verifying claimed brands, unvetted offers, and recruiters' },
+  { step: '05', label: 'Inspecting Link Infrastructure', detail: 'Checking domain entropy, TLD risk, and lookalike targets' },
+  { step: '06', label: 'Building Forensic Verdict', detail: 'Synthesizing evidence with Google Gemini threat reasoning' }
 ];
 
 interface InvestigationSequenceProps {
@@ -24,8 +23,7 @@ interface InvestigationSequenceProps {
 
 export const InvestigationSequence: React.FC<InvestigationSequenceProps> = ({ currentStageIndex }) => {
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-8 py-8 px-4">
-      {/* Central Ring Visual */}
+    <div className="w-full max-w-3xl mx-auto space-y-8 py-6">
       <div className="flex flex-col items-center justify-center space-y-4">
         <InvestigationRing
           score={0}
@@ -36,77 +34,71 @@ export const InvestigationSequence: React.FC<InvestigationSequenceProps> = ({ cu
         />
 
         <div className="text-center space-y-1">
-          <h3 className="text-lg font-bold font-mono text-white tracking-wide uppercase">
-            AI SECURITY INVESTIGATION IN PROGRESS
+          <h3 className="text-xl font-bold text-[#252033] tracking-tight">
+            Analyzing Your Submission
           </h3>
-          <p className="text-xs text-slate-400 font-mono">
-            Evaluating evidence through deterministic matrix and Gemini threat correlation
+          <p className="text-sm text-[#777181]">
+            Correlating deterministic risk signals with Google Gemini intelligence
           </p>
         </div>
       </div>
 
-      {/* Forensic Stages List */}
-      <div className="rounded-2xl bg-[#12141a] border border-zinc-800 p-5 sm:p-6 shadow-2xl space-y-2.5 font-mono">
-        <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3 mb-3 text-xs">
-          <span className="text-emerald-400 font-bold tracking-wider">FORENSIC EXECUTION PIPELINE</span>
-          <span className="text-slate-500">
-            {Math.min(currentStageIndex + 1, 6)} OF 06 VERIFIED
+      <div className="rounded-2xl bg-white border border-[#F0E5EC] p-5 sm:p-6 shadow-[0_10px_30px_-12px_rgba(201,45,125,0.12)] space-y-2.5">
+        <div className="flex items-center justify-between border-b border-[#F0E5EC] pb-3 mb-3 text-xs">
+          <span className="font-semibold text-[#C92D7D]">Investigation Pipeline</span>
+          <span className="font-mono tabular-nums text-[#777181]">
+            {Math.min(currentStageIndex + 1, 6)} of 6 steps
           </span>
         </div>
 
         {INVESTIGATION_STAGES.map((stage, idx) => {
           const isDone = idx < currentStageIndex;
           const isCurrent = idx === currentStageIndex;
-          const isPending = idx > currentStageIndex;
 
           return (
             <div
               key={stage.step}
-              className={`flex items-center justify-between p-3 rounded-xl transition-all duration-200 ${
+              className={`flex items-center justify-between p-3.5 rounded-xl transition-all duration-150 ${
                 isCurrent
-                  ? 'bg-emerald-950/40 border border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.12)]'
+                  ? 'bg-[#FCE7F3]/60 border border-[#E94D9B]/40'
                   : isDone
-                  ? 'bg-[#161922] border border-zinc-800/60 text-slate-300'
-                  : 'opacity-40 border border-transparent text-slate-500'
+                  ? 'bg-[#FFF8FC] border border-[#F0E5EC]'
+                  : 'opacity-45 border border-transparent'
               }`}
             >
-              <div className="flex items-center space-x-3 min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
                 <span
-                  className={`text-xs font-bold ${
-                    isCurrent ? 'text-emerald-400' : isDone ? 'text-emerald-400' : 'text-slate-600'
+                  className={`font-mono text-xs font-bold tabular-nums ${
+                    isCurrent ? 'text-[#C92D7D]' : isDone ? 'text-[#16A36A]' : 'text-[#777181]'
                   }`}
                 >
                   {stage.step}
                 </span>
 
                 <div className="min-w-0">
-                  <div
-                    className={`text-xs sm:text-sm font-semibold tracking-wide truncate ${
-                      isCurrent ? 'text-white' : isDone ? 'text-slate-200' : 'text-slate-500'
-                    }`}
-                  >
+                  <div className="text-sm font-semibold text-[#252033] truncate">
                     {stage.label}
                   </div>
-                  <div className="text-[11px] text-slate-400 font-sans truncate hidden sm:block">
+                  <div className="text-xs text-[#777181] truncate hidden sm:block">
                     {stage.detail}
                   </div>
                 </div>
               </div>
 
-              <div className="flex-shrink-0 ml-3">
+              <div className="shrink-0 ml-3">
                 {isDone && (
-                  <div className="flex items-center space-x-1.5 text-xs text-emerald-400">
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-[#16A36A]">
                     <CheckCircle2 className="w-4 h-4" />
-                    <span className="text-[11px] hidden sm:inline">Inspected</span>
+                    <span className="hidden sm:inline">Done</span>
                   </div>
                 )}
                 {isCurrent && (
-                  <div className="flex items-center space-x-1.5 text-xs text-emerald-400">
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-[#C92D7D]">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-[11px] hidden sm:inline animate-pulse">Analyzing</span>
+                    <span className="hidden sm:inline">Checking</span>
                   </div>
                 )}
-                {isPending && <CircleDashed className="w-4 h-4 text-slate-700" />}
+                {!isDone && !isCurrent && <CircleDashed className="w-4 h-4 text-[#E7D2DF]" />}
               </div>
             </div>
           );

@@ -8,6 +8,9 @@ import { analyzeUrlStructure } from './server/analyzers/urlAnalyzer.ts';
 import { computeThreatIndex } from './server/analyzers/riskEngine.ts';
 import { generateSecurityExplanation, analyzeImageScreenshot } from './server/services/geminiService.ts';
 import { generateGeographicIntelligence } from './src/utils/geoIntelligence.ts';
+import { generateScambaitTurn } from './server/services/scambaitService.ts';
+import { generateEmergencyReports } from './server/services/emergencyService.ts';
+import { getLiveThreatFeed, getModelBenchmarks } from './server/services/threatFeedService.ts';
 import type { AnalysisResult } from './src/types.ts';
 
 dotenv.config();
@@ -198,6 +201,52 @@ Flagged Indicators: ${urlAnalysis.urlDetails.flaggedKeywords.join(', ') || 'None
         error: 'Unable to evaluate URL threat indicators. Please verify the URL format.'
       });
     }
+  });
+
+  // --- SCAMBAITER AI HONEYPOT ENDPOINT ---
+  app.post('/api/scambait/chat', async (req, res) => {
+    try {
+      const { scammerMessage, history, persona } = req.body;
+      if (!scammerMessage || typeof scammerMessage !== 'string') {
+        return res.status(400).json({ error: 'Please provide the scammer message to bait.' });
+      }
+      const response = await generateScambaitTurn({
+        scammerMessage: scammerMessage.trim(),
+        history: Array.isArray(history) ? history : [],
+        persona: persona || 'elderly'
+      });
+      res.json(response);
+    } catch (err: any) {
+      console.error('Scambait error:', err);
+      res.status(500).json({ error: 'Error processing scambait agent response.' });
+    }
+  });
+
+  // --- VICTIM EMERGENCY LEGAL COMPLAINT & BANK FREEZE GENERATOR ---
+  app.post('/api/emergency/report', async (req, res) => {
+    try {
+      const payload = req.body;
+      const reports = generateEmergencyReports(payload || {});
+      res.json(reports);
+    } catch (err: any) {
+      console.error('Emergency report generation error:', err);
+      res.status(500).json({ error: 'Failed to generate emergency complaint documents.' });
+    }
+  });
+
+  // --- LIVE GLOBAL THREAT TELEMETRY FEED ---
+  app.get('/api/threats/live-feed', (req, res) => {
+    res.json({
+      status: 'active',
+      count: 7,
+      incidents: getLiveThreatFeed(),
+      updatedAt: new Date().toISOString()
+    });
+  });
+
+  // --- ACADEMIC MODEL BENCHMARKS & EVALUATION METRICS ---
+  app.get('/api/benchmarks', (req, res) => {
+    res.json(getModelBenchmarks());
   });
 
   // --- VITE MIDDLEWARE (DEV) & STATIC FILES (PROD) ---

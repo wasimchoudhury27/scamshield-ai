@@ -9,28 +9,33 @@ import {
   Check,
   Share2,
   ExternalLink,
-  ShieldCheck,
-  AlertOctagon,
-  ArrowRight,
-  RotateCcw
+  RotateCcw,
+  ArrowRight
 } from 'lucide-react';
 
 interface ActionCenterProps {
   result: AnalysisResult;
   onReset: () => void;
+  onOpenEmergencyHub?: () => void;
+  onOpenScambaiter?: () => void;
 }
 
-export const ActionCenter: React.FC<ActionCenterProps> = ({ result, onReset }) => {
+export const ActionCenter: React.FC<ActionCenterProps> = ({
+  result,
+  onReset,
+  onOpenEmergencyHub,
+  onOpenScambaiter
+}) => {
   const [copiedReport, setCopiedReport] = useState(false);
   const [copiedAdvice, setCopiedAdvice] = useState(false);
 
   const handleCopyReport = () => {
-    const report = `SCAMSHIELD CRITICAL SECURITY BRIEFING
+    const report = `SCAMSHIELD AI SECURITY BRIEFING
 Risk Level: ${result.riskLevel} (${result.threatScore}/100)
 Assessment: ${result.summary}
 Primary Evidence: ${result.primaryQuote ? `"${result.primaryQuote}"` : 'Flagged by forensic indicators'}
 Action Required: Do not transfer money, share OTPs, or click unverified links.
-Investigated via SCAMSHIELD (https://scamshield.ai)`;
+Investigated via SCAMSHIELD AI`;
 
     navigator.clipboard.writeText(report);
     setCopiedReport(true);
@@ -38,8 +43,7 @@ Investigated via SCAMSHIELD (https://scamshield.ai)`;
   };
 
   const handleShareAdvice = () => {
-    const advice = `⚠️ FRAUD ALERT: I just checked a suspicious message using SCAMSHIELD. It scored ${result.threatScore}/100 (${result.riskLevel}).
-Rule of thumb: Legitimate employers and genuine landlords never demand advance fees, gate pass tokens, or equipment security deposits via UPI/GPay. Always verify directly!`;
+    const advice = `Safety Alert: I checked a suspicious message using SCAMSHIELD AI and it scored ${result.threatScore}/100 (${result.riskLevel}). Legitimate employers and landlords never demand upfront security deposits via UPI/GPay. Always verify directly.`;
 
     navigator.clipboard.writeText(advice);
     setCopiedAdvice(true);
@@ -48,84 +52,66 @@ Rule of thumb: Legitimate employers and genuine landlords never demand advance f
 
   const defensiveDirectives = [
     {
-      title: 'DO NOT SEND MONEY',
-      desc: 'Never transfer registration fees, laptop security deposits, or gate-pass token payments. Real employers and verified landlords will not ask for advance UPI transfers.',
+      title: 'Do Not Send Money',
+      desc: 'Never transfer registration fees, laptop security deposits, or viewing gate-pass charges. Verified employers and landlords do not ask for advance UPI payments.',
       icon: Ban,
-      badge: 'STRICT PROHIBITION',
-      color: 'text-red-400',
-      border: 'border-red-500/40',
-      bg: 'bg-red-950/20'
+      color: 'text-[#E5484D]',
+      bg: 'bg-[#E5484D]/10'
     },
     {
-      title: 'DO NOT SHARE OTPS OR IDS',
-      desc: 'Do not provide Aadhaar/PAN scans, one-time passwords (OTPs), or online banking verification codes to unverified recruiters or agents.',
+      title: 'Protect OTPs & IDs',
+      desc: 'Never share Aadhaar/PAN scans, one-time passwords (OTPs), UPI PINs, or install remote-access apps like AnyDesk for unverified contacts.',
       icon: KeyRound,
-      badge: 'SECURITY DIRECTIVE',
-      color: 'text-amber-400',
-      border: 'border-amber-500/40',
-      bg: 'bg-amber-950/20'
+      color: 'text-[#E99A24]',
+      bg: 'bg-[#E99A24]/10'
     },
     {
-      title: 'VERIFY COMPANY DIRECTLY',
-      desc: 'Look up the enterprise independently via Google, official corporate career portals, or MCA company records. Do not use phone numbers or links provided in the suspect message.',
+      title: 'Verify Independently',
+      desc: 'Look up the company or agency directly through official search results or verified directories — never use phone numbers or links inside the suspect message.',
       icon: Building2,
-      badge: 'INDEPENDENT AUDIT',
-      color: 'text-cyan-400',
-      border: 'border-cyan-500/40',
-      bg: 'bg-cyan-950/20'
+      color: 'text-[#C92D7D]',
+      bg: 'bg-[#FCE7F3]'
     },
     {
-      title: 'REPORT SENDER & BLOCK',
-      desc: 'Block the sender on WhatsApp/SMS/Email immediately and submit details to official national cybercrime authorities to protect other potential victims.',
+      title: 'Block & Report',
+      desc: 'Block the sender immediately and report the account to official national cybercrime authorities to protect others.',
       icon: Flag,
-      badge: 'INCIDENT LOGGING',
-      color: 'text-indigo-400',
-      border: 'border-indigo-500/40',
-      bg: 'bg-indigo-950/20'
+      color: 'text-[#16A36A]',
+      bg: 'bg-[#16A36A]/10'
     }
   ];
 
   return (
-    <section className="space-y-6 pt-2">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+    <section className="rounded-2xl bg-white border border-[#F0E5EC] p-5 sm:p-7 shadow-sm space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#F0E5EC] pb-4">
         <div>
-          <span className="text-[11px] font-mono tracking-widest uppercase text-emerald-400 font-semibold block">
-            DEFENSIVE ACTION PROTOCOL
-          </span>
-          <h3 className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight">
-            WHAT SHOULD YOU DO NOW?
+          <h3 className="text-lg font-bold text-[#252033]">
+            Recommended Next Steps
           </h3>
+          <p className="text-xs text-[#777181]">
+            Immediate protective actions based on this risk verdict
+          </p>
         </div>
-
-        <span className="text-xs font-mono text-emerald-400/90 bg-emerald-950/50 px-3 py-1 rounded-full border border-emerald-800/40">
+        <span className="text-xs font-medium text-[#16A36A]">
           Prioritized Safety Checklist
         </span>
       </div>
 
-      {/* 4 Directives Bento Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {defensiveDirectives.map((d, idx) => {
           const Icon = d.icon;
           return (
             <div
               key={idx}
-              className={`p-5 rounded-2xl border ${d.border} ${d.bg} bg-[#080d19] space-y-2.5 transition-all`}
+              className="p-4 sm:p-5 rounded-xl bg-[#FFF8FC] border border-[#F0E5EC] space-y-2"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2.5">
-                  <div className={`p-2 rounded-xl bg-slate-900 border border-slate-800 ${d.color}`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <h4 className="text-sm font-bold text-white font-mono tracking-tight">
-                    {d.title}
-                  </h4>
+              <div className="flex items-center gap-2.5">
+                <div className={`w-8 h-8 rounded-lg ${d.bg} ${d.color} flex items-center justify-center shrink-0`}>
+                  <Icon className="w-4 h-4" />
                 </div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
-                  {d.badge}
-                </span>
+                <h4 className="text-sm font-bold text-[#252033]">{d.title}</h4>
               </div>
-
-              <p className="text-xs sm:text-sm text-slate-300 font-sans leading-relaxed">
+              <p className="text-xs sm:text-sm text-[#777181] leading-relaxed">
                 {d.desc}
               </p>
             </div>
@@ -133,76 +119,84 @@ Rule of thumb: Legitimate employers and genuine landlords never demand advance f
         })}
       </div>
 
-      {/* Secondary Tools and Share Bar */}
-      <div className="p-4 sm:p-6 rounded-2xl bg-[#080d19] border border-slate-800 space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800/70 pb-4">
-          <div>
-            <h4 className="text-xs sm:text-sm font-bold text-white font-mono uppercase tracking-wide">
-              INCIDENT SHARING &amp; REPORTING TOOLS
-            </h4>
-            <p className="text-[11px] sm:text-xs text-slate-400 font-sans mt-0.5">
-              Share actionable proof with contacts or national cybercrime authorities
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+      <div className="pt-4 border-t border-[#F0E5EC] space-y-4">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {onOpenEmergencyHub && (
             <button
               type="button"
-              onClick={handleCopyReport}
-              className="min-h-[44px] flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-mono text-slate-200 transition-colors cursor-pointer touch-manipulation flex-1 sm:flex-initial"
+              onClick={onOpenEmergencyHub}
+              className="min-h-[42px] inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#E5484D] hover:bg-[#cf393e] text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer whitespace-nowrap"
             >
-              {copiedReport ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                  <span className="text-emerald-400 font-bold">Report Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
-                  <span>Copy Dossier</span>
-                </>
-              )}
+              <span>Draft FIR &amp; Bank Freeze</span>
             </button>
+          )}
 
+          {onOpenScambaiter && (
             <button
               type="button"
-              onClick={handleShareAdvice}
-              className="min-h-[44px] flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-mono text-slate-200 transition-colors cursor-pointer touch-manipulation flex-1 sm:flex-initial"
+              onClick={onOpenScambaiter}
+              className="min-h-[42px] inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#E94D9B] to-[#C92D7D] hover:from-[#d93d8b] hover:to-[#b3246d] text-white text-xs font-semibold shadow-sm transition-all cursor-pointer whitespace-nowrap"
             >
-              {copiedAdvice ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                  <span className="text-emerald-400 font-bold">Advice Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Share2 className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
-                  <span>Share Advice</span>
-                </>
-              )}
+              <span>Open AI Honeypot</span>
             </button>
+          )}
 
-            <a
-              href="https://cybercrime.gov.in"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="min-h-[44px] flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-xl bg-red-950/40 hover:bg-red-950/60 border border-red-500/40 text-xs font-mono text-red-300 transition-colors touch-manipulation w-full sm:w-auto"
-            >
-              <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
-              <span>Report to CyberCrime.gov</span>
-            </a>
-          </div>
+          <button
+            type="button"
+            onClick={handleCopyReport}
+            className="min-h-[42px] inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-[#FFF8FC] border border-[#F0E5EC] text-xs font-semibold text-[#252033] transition-colors cursor-pointer whitespace-nowrap"
+          >
+            {copiedReport ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-[#16A36A]" />
+                <span className="text-[#16A36A]">Copied</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5 text-[#777181]" />
+                <span>Copy Dossier</span>
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleShareAdvice}
+            className="min-h-[42px] inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-[#FFF8FC] border border-[#F0E5EC] text-xs font-semibold text-[#252033] transition-colors cursor-pointer whitespace-nowrap"
+          >
+            {copiedAdvice ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-[#16A36A]" />
+                <span className="text-[#16A36A]">Advice Copied</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="w-3.5 h-3.5 text-[#777181]" />
+                <span>Share Warning</span>
+              </>
+            )}
+          </button>
+
+          <a
+            href="https://cybercrime.gov.in"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="min-h-[42px] inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#FFF8FC] hover:bg-[#FCE7F3] border border-[#F0E5EC] text-xs font-semibold text-[#C92D7D] transition-colors whitespace-nowrap"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            <span>CyberCrime.gov.in</span>
+          </a>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono text-slate-500">
-          <span className="text-[11px] sm:text-xs">Assessment Dossier: #{result.id}</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#777181]">
+          <span className="font-mono">Assessment ID: {result.id}</span>
           <button
             type="button"
             onClick={onReset}
-            className="min-h-[44px] flex items-center space-x-1.5 text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer touch-manipulation py-2 px-3 rounded-lg hover:bg-slate-900"
+            className="inline-flex items-center gap-1.5 text-[#C92D7D] hover:underline font-semibold cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Scan Another Message or URL</span>
+            <span>Scan another message or URL</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>

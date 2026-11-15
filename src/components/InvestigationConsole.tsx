@@ -8,15 +8,14 @@ import {
   Upload,
   X,
   AlertCircle,
-  Sparkles,
-  ShieldAlert,
   Trash2,
-  Copy,
-  Check
+  Check,
+  PhoneCall,
+  Volume2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-export type InputMode = 'message' | 'url' | 'image' | 'email';
+export type InputMode = 'message' | 'url' | 'image' | 'email' | 'voice';
 
 interface ImageUploadData {
   base64: string;
@@ -49,7 +48,6 @@ interface InvestigationConsoleProps {
   setActiveMode: (mode: InputMode) => void;
   initialText?: string;
   initialUrl?: string;
-  onSelectQuickSample?: (type: string) => void;
 }
 
 export const InvestigationConsole: React.FC<InvestigationConsoleProps> = ({
@@ -64,6 +62,7 @@ export const InvestigationConsole: React.FC<InvestigationConsoleProps> = ({
   const [messageText, setMessageText] = useState(initialText);
   const [urlInput, setUrlInput] = useState(initialUrl);
   const [emailText, setEmailText] = useState('');
+  const [voiceText, setVoiceText] = useState('');
   const [imageFile, setImageFile] = useState<ImageUploadData | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -71,7 +70,7 @@ export const InvestigationConsole: React.FC<InvestigationConsoleProps> = ({
   const [isUploadFocused, setIsUploadFocused] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewUrlRef = useRef<string | null>(null);
-  const pasteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pasteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (initialText) {
@@ -89,7 +88,6 @@ export const InvestigationConsole: React.FC<InvestigationConsoleProps> = ({
     }
   }, [initialUrl]);
 
-  // Clean up Object URLs and timers on unmount
   useEffect(() => {
     return () => {
       if (previewUrlRef.current) {
@@ -119,25 +117,21 @@ export const InvestigationConsole: React.FC<InvestigationConsoleProps> = ({
   const handleFile = (file: File, isFromPaste = false) => {
     const fileType = (file.type || '').toLowerCase();
 
-    // Verify it is an image
     if (!fileType.startsWith('image/')) {
       setErrorMsg('Please upload a valid image (PNG, JPG, WEBP, GIF).');
       return;
     }
 
-    // Verify supported image format
     if (!SUPPORTED_IMAGE_TYPES.includes(fileType)) {
       setErrorMsg('Unsupported image format. Please upload or paste PNG, JPG, WEBP, or GIF.');
       return;
     }
 
-    // Check size limit: 8MB
     if (file.size > 8 * 1024 * 1024) {
-      setErrorMsg('File size exceeds 8MB. Please upload or paste a smaller screenshot or letter.');
+      setErrorMsg('File size exceeds 8MB. Please upload a smaller screenshot or document.');
       return;
     }
 
-    // Clean up any existing preview URL
     if (previewUrlRef.current) {
       URL.revokeObjectURL(previewUrlRef.current);
       previewUrlRef.current = null;
@@ -157,7 +151,7 @@ export const InvestigationConsole: React.FC<InvestigationConsoleProps> = ({
         const now = new Date();
         const pad = (n: number) => n.toString().padStart(2, '0');
         const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-        fileName = `clipboard-screenshot-${timestamp}.${ext}`;
+        fileName = `screenshot-${timestamp}.${ext}`;
       }
 
       setImageFile({
@@ -193,11 +187,9 @@ export const InvestigationConsole: React.FC<InvestigationConsoleProps> = ({
     if (file) handleFile(file, false);
   };
 
-  // Helper to extract image file from clipboard items or files
   const extractImageFromClipboard = (clipboardData: DataTransfer | null): File | null | 'unsupported' => {
     if (!clipboardData) return null;
 
-    // 1. Inspect clipboard items
     const items = clipboardData.items;
     if (items && items.length > 0) {
       for (let i = 0; i < items.length; i++) {
@@ -215,14 +207,13 @@ export const InvestigationConsole: React.FC<InvestigationConsoleProps> = ({
             const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
             const fileName = blob.name && blob.name !== 'image.png' && blob.name !== 'blob'
               ? blob.name
-              : `clipboard-screenshot-${timestamp}.${ext}`;
+              : `screenshot-${timestamp}.${ext}`;
             return new File([blob], fileName, { type: blob.type || mime, lastModified: Date.now() });
           }
         }
       }
     }
 
-    // 2. Fallback to clipboard files
     const files = clipboardData.files;
     if (files && files.length > 0) {
       for (let i = 0; i < files.length; i++) {
@@ -239,7 +230,6 @@ export const InvestigationConsole: React.FC<InvestigationConsoleProps> = ({
     return null;
   };
 
-  // Handler for paste directly on the upload container
   const handleContainerPaste = (e: React.ClipboardEvent) => {
     const result = extractImageFromClipboard(e.clipboardData);
 
@@ -255,18 +245,16 @@ export const InvestigationConsole: React.FC<InvestigationConsoleProps> = ({
     }
   };
 
-  // Window paste listener active strictly when in 'image' mode, guarding text inputs/textareas
   useEffect(() => {
     if (activeMode !== 'image') return;
 
     const handleDocumentPaste = (e: ClipboardEvent) => {
       const target = e.target as HTMLElement | null;
-      // Do NOT intercept if user is typing in any input, textarea, or contentEditable
       if (
         target &&
         (target.tagName === 'INPUT' ||
-         target.tagName === 'TEXTAREA' ||
-         target.isContentEditable)
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
       ) {
         return;
       }
@@ -297,63 +285,71 @@ export const InvestigationConsole: React.FC<InvestigationConsoleProps> = ({
 
     if (activeMode === 'message') {
       if (!messageText.trim() && !imageFile) {
-        setErrorMsg('Please paste the suspicious message or conversation to investigate.');
+        setErrorMsg('Please paste a suspicious message or conversation to analyze.');
         return;
       }
       onAnalyzeMessage(messageText, imageFile?.base64, imageFile?.mimeType);
     } else if (activeMode === 'email') {
       if (!emailText.trim()) {
-        setErrorMsg('Please paste the suspicious email text, headers, or sender address.');
+        setErrorMsg('Please paste the suspicious email body, sender, or headers.');
         return;
       }
       onAnalyzeMessage(`[SUSPICIOUS EMAIL CONTENT]\n${emailText}`);
     } else if (activeMode === 'image') {
       if (!imageFile && !messageText.trim()) {
-        setErrorMsg('Please upload a document screenshot or paste relevant text for OCR verification.');
+        setErrorMsg('Please upload a document screenshot or paste text for OCR verification.');
         return;
       }
-      onAnalyzeMessage(messageText || 'Analyze document screenshot for letterhead and deposit red flags.', imageFile?.base64, imageFile?.mimeType);
+      onAnalyzeMessage(
+        messageText || 'Analyze document screenshot for letterhead and deposit red flags.',
+        imageFile?.base64,
+        imageFile?.mimeType
+      );
     } else if (activeMode === 'url') {
       if (!urlInput.trim()) {
-        setErrorMsg('Please enter a target website address or suspicious link.');
+        setErrorMsg('Please enter a website URL or suspicious link to inspect.');
         return;
       }
       onAnalyzeUrl(urlInput);
+    } else if (activeMode === 'voice') {
+      if (!voiceText.trim()) {
+        setErrorMsg('Please paste or select a voice call transcript to analyze.');
+        return;
+      }
+      onAnalyzeMessage(`[SUSPICIOUS VOICE CALL & VISHING AUDIO TRANSCRIPT]\n${voiceText}`);
     }
   };
 
-  const modeOptions: { id: InputMode; label: string; icon: React.FC<{ className?: string }>; desc: string }[] = [
-    { id: 'message', label: 'MESSAGE', icon: MessageSquare, desc: 'WhatsApp, SMS, Telegram, Chat' },
-    { id: 'url', label: 'URL', icon: Globe, desc: 'Phishing Links, Portals, Domains' },
-    { id: 'image', label: 'IMAGE / LETTER', icon: FileImage, desc: 'Appointment Letters, Passbooks, Slips' },
-    { id: 'email', label: 'EMAIL', icon: Mail, desc: 'Spoofed Senders, Urgent Directives' }
+  const modeOptions: { id: InputMode; label: string; icon: React.FC<{ className?: string }> }[] = [
+    { id: 'message', label: 'Message', icon: MessageSquare },
+    { id: 'url', label: 'URL', icon: Globe },
+    { id: 'image', label: 'Image OCR', icon: FileImage },
+    { id: 'email', label: 'Email', icon: Mail },
+    { id: 'voice', label: 'Voice Call', icon: PhoneCall }
   ];
 
   return (
-    <div id="investigation-console" className="w-full max-w-4xl mx-auto">
-      <div className="rounded-2xl bg-[#12141a] border border-zinc-800 shadow-2xl p-5 sm:p-8 backdrop-blur-xl relative overflow-hidden">
-        {/* Subtle decorative top border glow */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
-
-        {/* Console Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-zinc-800/80 pb-4 mb-6">
+    <div
+      id="investigation-console"
+      className="w-full bg-white border border-[#F0E5EC] rounded-2xl shadow-[0_14px_40px_-14px_rgba(201,45,125,0.14)] p-5 sm:p-7 flex flex-col justify-between h-full"
+    >
+      <div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-[#F0E5EC] mb-5">
           <div>
-            <span className="text-[11px] font-mono tracking-widest uppercase text-emerald-400 font-semibold block mb-0.5">
-              Secure Evidence Submission
-            </span>
-            <h2 className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tight">
-              WHAT DO YOU WANT TO INVESTIGATE?
+            <h2 className="text-lg font-bold text-[#252033] tracking-tight">
+              AI Threat Scanner
             </h2>
+            <p className="text-xs text-[#777181]">
+              Submit a message, link, email, screenshot, or call transcript
+            </p>
           </div>
-
-          <div className="flex items-center space-x-2 text-xs font-mono text-slate-500">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span>SANDBOXED ANALYSIS CONSOLE</span>
-          </div>
+          <span className="text-xs font-medium text-[#C92D7D]">
+            Google Gemini + Risk Engine
+          </span>
         </div>
 
-        {/* Input Selector Tabs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+        {/* Segmented Channel Selector */}
+        <div className="flex flex-wrap sm:grid sm:grid-cols-5 gap-1.5 p-1 bg-[#FFF8FC] border border-[#F0E5EC] rounded-xl mb-5">
           {modeOptions.map((mode) => {
             const Icon = mode.icon;
             const isSelected = activeMode === mode.id;
@@ -362,333 +358,330 @@ export const InvestigationConsole: React.FC<InvestigationConsoleProps> = ({
               <button
                 key={mode.id}
                 type="button"
-                onClick={() => { setActiveMode(mode.id); setErrorMsg(null); }}
-                className={`relative flex flex-col items-center justify-center p-3 sm:p-3.5 rounded-xl border text-center transition-all duration-200 cursor-pointer ${
+                onClick={() => {
+                  setActiveMode(mode.id);
+                  setErrorMsg(null);
+                }}
+                className={`min-h-[40px] flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer whitespace-nowrap shrink-0 ${
                   isSelected
-                    ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
-                    : 'bg-[#161922] border-zinc-800/80 text-slate-400 hover:text-slate-200 hover:bg-[#1c202c]'
+                    ? 'bg-gradient-to-r from-[#E94D9B] to-[#C92D7D] text-white shadow-sm'
+                    : 'text-[#777181] hover:text-[#252033] hover:bg-white'
                 }`}
               >
-                <div className="flex items-center space-x-2 mb-1">
-                  <Icon className={`w-4 h-4 ${isSelected ? 'text-emerald-400' : 'text-slate-500'}`} />
-                  <span className="text-xs font-mono font-bold tracking-wider">{mode.label}</span>
-                </div>
-                <span className="text-[10px] text-slate-500 font-sans hidden sm:block truncate max-w-full">
-                  {mode.desc}
-                </span>
-
-                {isSelected && (
-                  <motion.div
-                    layoutId="activeTabIndicator"
-                    className="absolute -bottom-[1px] left-4 right-4 h-0.5 bg-emerald-400 rounded-full"
-                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                  />
-                )}
+                <Icon className="w-3.5 h-3.5 shrink-0" />
+                <span>{mode.label}</span>
               </button>
             );
           })}
         </div>
+      </div>
 
-        {/* Dynamic Input Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <AnimatePresence mode="wait">
-            {/* MODE: MESSAGE */}
-            {activeMode === 'message' && (
-              <motion.div
-                key="mode-message"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.15 }}
-                className="space-y-3"
-              >
-                <div className="relative">
-                  <textarea
-                    id="console-message-textarea"
-                    rows={6}
-                    value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
-                    placeholder="Paste the suspicious message, job offer, appointment letter, payment request, or conversation here..."
-                    disabled={isLoading}
-                    className="w-full bg-[#0a0c10] border border-zinc-800 rounded-xl p-4 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/50 transition-all font-sans leading-relaxed resize-y disabled:opacity-50"
-                  />
-                  <div className="absolute bottom-3 right-3 flex items-center space-x-3 text-[11px] font-mono text-slate-500">
+      {/* Form Body */}
+      <form onSubmit={handleSubmit} className="space-y-4 flex-1 flex flex-col justify-between">
+        <AnimatePresence mode="wait">
+          {activeMode === 'message' && (
+            <motion.div
+              key="mode-message"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15 }}
+            >
+              <div className="relative">
+                <textarea
+                  id="console-message-textarea"
+                  rows={6}
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  placeholder="Paste the suspicious WhatsApp chat, SMS, job offer, rental request, or payment demand here..."
+                  disabled={isLoading}
+                  className="w-full bg-[#FFF8FC] border border-[#F0E5EC] rounded-xl p-4 text-sm text-[#252033] placeholder-[#777181]/75 focus:outline-none focus:bg-white focus:border-[#E94D9B] focus:ring-2 focus:ring-[#E94D9B]/15 transition-all leading-relaxed resize-y disabled:opacity-50"
+                />
+                <div className="mt-1.5 flex items-center justify-between text-xs text-[#777181] px-1">
+                  <span>Supports WhatsApp, SMS, Telegram, and job/rental texts</span>
+                  <div className="flex items-center gap-3">
                     {messageText.length > 0 && (
                       <button
                         type="button"
                         onClick={() => setMessageText('')}
-                        className="text-slate-500 hover:text-red-400 flex items-center space-x-1"
+                        className="text-[#777181] hover:text-[#E5484D] inline-flex items-center gap-1 cursor-pointer"
                       >
                         <Trash2 className="w-3 h-3" />
                         <span>Clear</span>
                       </button>
                     )}
-                    <span>{messageText.length} characters</span>
+                    <span className="font-mono tabular-nums">{messageText.length} chars</span>
                   </div>
                 </div>
-              </motion.div>
-            )}
-
-            {/* MODE: URL */}
-            {activeMode === 'url' && (
-              <motion.div
-                key="mode-url"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.15 }}
-                className="space-y-3"
-              >
-                <div>
-                  <label htmlFor="console-url-input" className="block text-xs font-mono text-slate-400 mb-2 uppercase">
-                    Suspicious Website or Redirect Link
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 font-mono text-sm">
-                      <Globe className="w-4 h-4 text-emerald-400" />
-                    </div>
-                    <input
-                      id="console-url-input"
-                      type="text"
-                      value={urlInput}
-                      onChange={(e) => setUrlInput(e.target.value)}
-                      placeholder="https://sbi-online-kyc-verification.xyz or paste link"
-                      disabled={isLoading}
-                      className="w-full bg-[#0a0c10] border border-zinc-800 rounded-xl pl-10 pr-4 py-3.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/50 transition-all font-mono disabled:opacity-50"
-                    />
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-[#161922] border border-zinc-800 flex items-start space-x-2.5 text-xs font-mono text-slate-400">
-                  <span className="text-emerald-400 font-bold">INFO:</span>
-                  <span>
-                    Our engine evaluates DNS structure, protocol security, registrar status, brand homograph spoofing, and entropy without executing untrusted payload scripts in your browser.
-                  </span>
-                </div>
-              </motion.div>
-            )}
-
-            {/* MODE: IMAGE / LETTER */}
-            {activeMode === 'image' && (
-              <motion.div
-                key="mode-image"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.15 }}
-                className="space-y-4"
-              >
-                {/* Subtle paste confirmation banner */}
-                <AnimatePresence>
-                  {pasteSuccessNotice && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -6, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -6, scale: 0.98 }}
-                      transition={{ duration: 0.2 }}
-                      className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-mono"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                        <span className="font-semibold">Image pasted from clipboard</span>
-                      </div>
-                      <span className="text-emerald-400/80 text-[11px] hidden sm:inline">
-                        Preview generated · Ready for investigation
-                      </span>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <div
-                  id="image-dropzone-container"
-                  tabIndex={0}
-                  role="region"
-                  aria-label="Screenshot and document upload dropzone"
-                  onFocus={() => setIsUploadFocused(true)}
-                  onBlur={() => setIsUploadFocused(false)}
-                  onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-                  onDragLeave={() => setIsDragOver(false)}
-                  onDrop={handleDrop}
-                  onPaste={handleContainerPaste}
-                  onClick={() => {
-                    if (!imageFile) fileInputRef.current?.click();
-                  }}
-                  onKeyDown={(e) => {
-                    if ((e.key === 'Enter' || e.key === ' ') && !imageFile) {
-                      e.preventDefault();
-                      fileInputRef.current?.click();
-                    }
-                  }}
-                  className={`border-2 border-dashed rounded-xl p-5 sm:p-7 text-center transition-all outline-none ${
-                    isDragOver
-                      ? 'border-emerald-400 bg-emerald-950/30'
-                      : isUploadFocused
-                      ? 'border-emerald-500/70 bg-emerald-950/20 ring-1 ring-emerald-500/30'
-                      : imageFile
-                      ? 'border-emerald-500/40 bg-emerald-950/15'
-                      : 'border-zinc-800 hover:border-emerald-500/40 bg-[#0a0c10] cursor-pointer'
-                  }`}
-                >
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFile(file, false);
-                    }}
-                    accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
-                    className="hidden"
-                  />
-
-                  {imageFile ? (
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-[#161922] p-3.5 sm:p-4 rounded-xl border border-emerald-500/30 gap-3 text-left">
-                      <div className="flex items-center space-x-3.5 min-w-0 flex-1">
-                        {imageFile.previewUrl ? (
-                          <div className="relative flex-shrink-0">
-                            <img
-                              src={imageFile.previewUrl}
-                              alt={imageFile.name}
-                              className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-lg border border-emerald-500/40 shadow-md bg-black"
-                            />
-                            <div className="absolute inset-0 bg-emerald-950/20 rounded-lg pointer-events-none" />
-                          </div>
-                        ) : (
-                          <div className="p-2.5 rounded-lg bg-emerald-950 text-emerald-400 border border-emerald-800 flex-shrink-0">
-                            <FileImage className="w-6 h-6" />
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm font-mono text-white font-semibold truncate block max-w-xs sm:max-w-md">
-                              {imageFile.name}
-                            </span>
-                            {imageFile.isFromPaste && (
-                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 flex-shrink-0">
-                                Clipboard
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs font-mono text-slate-400">
-                            <span className="text-emerald-400 uppercase font-semibold">
-                              {imageFile.mimeType.replace('image/', '')}
-                            </span>
-                            {imageFile.size > 0 && (
-                              <span>{formatFileSize(imageFile.size)}</span>
-                            )}
-                            <span className="text-emerald-400 flex items-center space-x-1">
-                              <Check className="w-3 h-3 flex-shrink-0" />
-                              <span>Ready for OCR &amp; analysis</span>
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-2 self-end sm:self-center flex-shrink-0">
-                        <button
-                          type="button"
-                          onClick={handleRemoveImage}
-                          className="flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-mono text-slate-400 hover:text-red-400 hover:bg-zinc-800 border border-zinc-700/60 transition-colors cursor-pointer"
-                          title="Remove image"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                          <span>Remove</span>
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="w-12 h-12 mx-auto rounded-xl bg-zinc-900 flex items-center justify-center text-emerald-400 border border-zinc-800 shadow-inner">
-                        <Upload className="w-6 h-6" />
-                      </div>
-
-                      <div>
-                        <div className="text-sm font-mono text-slate-200">
-                          Drop screenshot or appointment letter here, or{' '}
-                          <span className="text-emerald-400 underline decoration-emerald-400/50 hover:text-emerald-300 font-medium">browse files</span>
-                        </div>
-                      </div>
-
-                      <p className="text-[11px] text-slate-500 font-sans">
-                        PNG, JPG, JPEG, WEBP, GIF up to 8MB · Analyzed with multimodal vision OCR
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-mono text-slate-400 mb-1.5 uppercase">
-                    Additional context or notes (optional)
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
-                    placeholder="e.g. Received via WhatsApp from unknown recruiter asking for ₹3,000 onboarding kit deposit..."
-                    className="w-full bg-[#0a0c10] border border-zinc-800 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500/80 font-sans"
-                  />
-                </div>
-              </motion.div>
-            )}
-
-            {/* MODE: EMAIL */}
-            {activeMode === 'email' && (
-              <motion.div
-                key="mode-email"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.15 }}
-                className="space-y-3"
-              >
-                <div className="relative">
-                  <textarea
-                    id="console-email-textarea"
-                    rows={6}
-                    value={emailText}
-                    onChange={(e) => setEmailText(e.target.value)}
-                    placeholder="Paste the suspicious email (including sender, subject line, body text, or full email headers)..."
-                    disabled={isLoading}
-                    className="w-full bg-[#0a0c10] border border-zinc-800 rounded-xl p-4 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/50 transition-all font-sans leading-relaxed resize-y disabled:opacity-50"
-                  />
-                  <div className="absolute bottom-3 right-3 text-[11px] font-mono text-slate-500">
-                    {emailText.length} characters
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Validation Error Banner */}
-          {errorMsg && (
-            <div className="p-3.5 rounded-xl bg-red-950/60 border border-red-500/40 text-red-300 text-xs font-mono flex items-center space-x-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400" />
-              <span>{errorMsg}</span>
-            </div>
+              </div>
+            </motion.div>
           )}
 
-          {/* Submission Action Bar */}
-          <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <button
-              id="run-ai-investigation-button"
-              type="submit"
-              disabled={isLoading}
-              className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-mono text-sm uppercase tracking-wider font-bold transition-all duration-300 flex items-center justify-center space-x-2.5 cursor-pointer shadow-xl ${
-                isLoading
-                  ? 'bg-emerald-950 text-emerald-500 border border-emerald-800 cursor-not-allowed'
-                  : 'bg-emerald-400 hover:bg-emerald-300 text-slate-950 shadow-[0_0_25px_rgba(16,185,129,0.35)] hover:shadow-[0_0_35px_rgba(16,185,129,0.5)] active:scale-[0.98]'
-              }`}
+          {activeMode === 'url' && (
+            <motion.div
+              key="mode-url"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15 }}
+              className="space-y-3"
             >
-              <span>{isLoading ? 'INVESTIGATION IN PROGRESS...' : 'RUN AI INVESTIGATION'}</span>
-              {!isLoading && <ArrowRight className="w-4 h-4" />}
-            </button>
+              <div>
+                <label htmlFor="console-url-input" className="block text-xs font-semibold text-[#252033] mb-1.5">
+                  Suspicious Website or Payment Link
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Globe className="w-4 h-4 text-[#E94D9B]" />
+                  </div>
+                  <input
+                    id="console-url-input"
+                    type="text"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    placeholder="https://sbi-online-kyc-verification.xyz"
+                    disabled={isLoading}
+                    className="w-full bg-[#FFF8FC] border border-[#F0E5EC] rounded-xl pl-10 pr-4 py-3.5 text-sm font-mono text-[#252033] placeholder-[#777181]/75 focus:outline-none focus:bg-white focus:border-[#E94D9B] focus:ring-2 focus:ring-[#E94D9B]/15 transition-all disabled:opacity-50"
+                  />
+                </div>
+              </div>
 
-            <div className="flex items-center space-x-2 text-[11px] text-slate-500 font-mono text-center sm:text-right">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              <span>Dual-engine validation · Deterministic rules & Gemini AI</span>
-            </div>
+              <p className="text-xs text-[#777181] bg-[#FFF8FC] border border-[#F0E5EC] rounded-xl p-3 leading-relaxed">
+                Inspects domain structure, TLD risk, protocol encryption, brand homoglyph spoofing, and URL entropy safely without visiting the link.
+              </p>
+            </motion.div>
+          )}
+
+          {activeMode === 'image' && (
+            <motion.div
+              key="mode-image"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15 }}
+              className="space-y-3"
+            >
+              <AnimatePresence>
+                {pasteSuccessNotice && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-[#16A36A]/10 border border-[#16A36A]/30 text-[#16A36A] text-xs font-medium"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Check className="w-4 h-4 shrink-0" />
+                      <span>Screenshot pasted from clipboard and ready for OCR</span>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div
+                id="image-dropzone-container"
+                tabIndex={0}
+                role="region"
+                aria-label="Screenshot and document upload dropzone"
+                onFocus={() => setIsUploadFocused(true)}
+                onBlur={() => setIsUploadFocused(false)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragOver(true);
+                }}
+                onDragLeave={() => setIsDragOver(false)}
+                onDrop={handleDrop}
+                onPaste={handleContainerPaste}
+                onClick={() => {
+                  if (!imageFile) fileInputRef.current?.click();
+                }}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ' ') && !imageFile) {
+                    e.preventDefault();
+                    fileInputRef.current?.click();
+                  }
+                }}
+                className={`border-2 border-dashed rounded-xl p-5 text-center transition-all outline-none ${
+                  isDragOver || isUploadFocused
+                    ? 'border-[#E94D9B] bg-[#FCE7F3]/40'
+                    : imageFile
+                    ? 'border-[#16A36A]/40 bg-[#16A36A]/5'
+                    : 'border-[#F0E5EC] hover:border-[#E94D9B]/60 bg-[#FFF8FC] cursor-pointer'
+                }`}
+              >
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFile(file, false);
+                  }}
+                  accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                  className="hidden"
+                />
+
+                {imageFile ? (
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white p-3 rounded-xl border border-[#F0E5EC] gap-3 text-left">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <img
+                        src={imageFile.previewUrl}
+                        alt={imageFile.name}
+                        className="w-12 h-12 object-cover rounded-lg border border-[#F0E5EC] shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <span className="text-sm font-semibold text-[#252033] truncate block">
+                          {imageFile.name}
+                        </span>
+                        <span className="text-xs text-[#777181] font-mono">
+                          {imageFile.mimeType.replace('image/', '').toUpperCase()} · {formatFileSize(imageFile.size)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-[#777181] hover:text-[#E5484D] hover:bg-[#FFF8FC] border border-[#F0E5EC] cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>Remove</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2 py-1">
+                    <div className="w-10 h-10 mx-auto rounded-xl bg-[#FCE7F3] flex items-center justify-center text-[#C92D7D]">
+                      <Upload className="w-5 h-5" />
+                    </div>
+                    <p className="text-sm text-[#252033] font-medium">
+                      Drop or paste a screenshot here, or <span className="text-[#C92D7D] underline">browse files</span>
+                    </p>
+                    <p className="text-xs text-[#777181]">
+                      PNG, JPG, WEBP, GIF up to 8MB · Inspected with Gemini multimodal OCR
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <textarea
+                rows={2}
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                placeholder="Optional context (e.g. Received via WhatsApp asking for a security deposit)..."
+                className="w-full bg-[#FFF8FC] border border-[#F0E5EC] rounded-xl p-3 text-sm text-[#252033] placeholder-[#777181]/75 focus:outline-none focus:bg-white focus:border-[#E94D9B]"
+              />
+            </motion.div>
+          )}
+
+          {activeMode === 'email' && (
+            <motion.div
+              key="mode-email"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15 }}
+            >
+              <textarea
+                id="console-email-textarea"
+                rows={6}
+                value={emailText}
+                onChange={(e) => setEmailText(e.target.value)}
+                placeholder="Paste the suspicious email including sender address, subject line, and body content..."
+                disabled={isLoading}
+                className="w-full bg-[#FFF8FC] border border-[#F0E5EC] rounded-xl p-4 text-sm text-[#252033] placeholder-[#777181]/75 focus:outline-none focus:bg-white focus:border-[#E94D9B] focus:ring-2 focus:ring-[#E94D9B]/15 transition-all leading-relaxed resize-y disabled:opacity-50"
+              />
+              <div className="mt-1.5 flex items-center justify-between text-xs text-[#777181] px-1">
+                <span>Checks spoofed senders, urgent directives, and credential lures</span>
+                <span className="font-mono tabular-nums">{emailText.length} chars</span>
+              </div>
+            </motion.div>
+          )}
+
+          {activeMode === 'voice' && (
+            <motion.div
+              key="mode-voice"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15 }}
+              className="space-y-3"
+            >
+              <div className="space-y-1.5">
+                <span className="text-xs font-semibold text-[#777181] flex items-center gap-1.5">
+                  <Volume2 className="w-3.5 h-3.5 text-[#E94D9B]" />
+                  <span>Load a sample call transcript:</span>
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setVoiceText(
+                        'Hello, this is Inspector Rathore from Mumbai Police Cyber Cell. Your Aadhaar number has been used in a Canara Bank account involved in 65 crore hawala money laundering. A Supreme Court non-bailable arrest warrant is issued against you. You are placed under 24-hour Digital Arrest on this Skype call. You must immediately transfer ₹95,000 security deposit to the RBI verification account to clear your name or a police vehicle will arrive at your home.'
+                      )
+                    }
+                    className="px-3 py-1.5 rounded-lg bg-[#FFF8FC] hover:bg-[#FCE7F3] border border-[#F0E5EC] text-xs font-medium text-[#252033] transition-colors cursor-pointer"
+                  >
+                    Digital Arrest Call
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setVoiceText(
+                        'Sir, I am calling from State Electricity Board sub-station. Your electricity connection CA number 882910 is scheduled for immediate disconnection at 9:30 PM due to unpaid bill of ₹650. You must download our quick payment app immediately or send ₹650 on PhonePe to officer UPI powerdesk@ybl right now.'
+                      )
+                    }
+                    className="px-3 py-1.5 rounded-lg bg-[#FFF8FC] hover:bg-[#FCE7F3] border border-[#F0E5EC] text-xs font-medium text-[#252033] transition-colors cursor-pointer"
+                  >
+                    Electricity Disconnection Call
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setVoiceText(
+                        'This is FedEx Customs Clearance Desk at Mumbai Airport. A package with your name and passport copy heading to Taiwan was intercepted by Narcotics Control Bureau. It contains 250 grams of MDMA and 5 fake credit cards. Transfer ₹45,000 customs penalty or CBI will issue Interpol notice.'
+                      )
+                    }
+                    className="px-3 py-1.5 rounded-lg bg-[#FFF8FC] hover:bg-[#FCE7F3] border border-[#F0E5EC] text-xs font-medium text-[#252033] transition-colors cursor-pointer"
+                  >
+                    Customs Drug Parcel Call
+                  </button>
+                </div>
+              </div>
+
+              <textarea
+                id="console-voice-textarea"
+                rows={4}
+                value={voiceText}
+                onChange={(e) => setVoiceText(e.target.value)}
+                placeholder="Paste or transcribe the suspicious phone call, deepfake voice note, or coercive conversation..."
+                disabled={isLoading}
+                className="w-full bg-[#FFF8FC] border border-[#F0E5EC] rounded-xl p-4 text-sm text-[#252033] placeholder-[#777181]/75 focus:outline-none focus:bg-white focus:border-[#E94D9B] focus:ring-2 focus:ring-[#E94D9B]/15 transition-all leading-relaxed resize-y disabled:opacity-50"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {errorMsg && (
+          <div className="p-3 rounded-xl bg-[#E5484D]/10 border border-[#E5484D]/30 text-[#E5484D] text-xs font-medium flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{errorMsg}</span>
           </div>
-        </form>
-      </div>
+        )}
+
+        <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <button
+            id="run-ai-investigation-button"
+            type="submit"
+            disabled={isLoading}
+            className="min-h-[46px] px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#E94D9B] to-[#C92D7D] hover:from-[#d93d8b] hover:to-[#b3246d] text-white text-sm font-semibold shadow-[0_8px_22px_-6px_rgba(233,77,155,0.45)] active:scale-[0.99] transition-all duration-150 inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
+          >
+            <span>{isLoading ? 'Analyzing Evidence...' : 'Analyze Threat'}</span>
+            {!isLoading && <ArrowRight className="w-4 h-4" />}
+          </button>
+
+          <span className="text-xs text-[#777181]">
+            Private session · No data stored
+          </span>
+        </div>
+      </form>
     </div>
   );
 };

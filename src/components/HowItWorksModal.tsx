@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, ShieldCheck, Cpu, Lock, CheckCircle2, AlertTriangle, ArrowRight, Zap } from 'lucide-react';
+import { X, ShieldCheck, Cpu, Lock, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface HowItWorksModalProps {
@@ -12,100 +12,95 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({ isOpen, onClos
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#252033]/50 backdrop-blur-sm">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+          initial={{ opacity: 0, scale: 0.96, y: 8 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          className="w-full max-w-2xl bg-[#080d19] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden font-sans text-slate-300"
+          exit={{ opacity: 0, scale: 0.96, y: 8 }}
+          transition={{ duration: 0.16 }}
+          className="w-full max-w-2xl bg-white border border-[#F0E5EC] rounded-2xl shadow-2xl overflow-hidden text-[#252033]"
         >
-          {/* Header */}
-          <div className="p-5 sm:p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 rounded-xl bg-cyan-950 border border-cyan-800 text-cyan-400">
+          <div className="p-5 sm:p-6 border-b border-[#F0E5EC] flex items-center justify-between bg-[#FFF8FC]">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E94D9B] to-[#C92D7D] text-white flex items-center justify-center shadow-sm">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white font-mono uppercase tracking-wide">
-                  HOW SCAMSHIELD WORKS
+                <h3 className="text-lg font-bold text-[#252033]">
+                  How SCAMSHIELD AI Works
                 </h3>
-                <p className="text-xs text-slate-400 font-sans">
-                  Dual-Engine Architecture: Deterministic Rules &amp; Gemini AI
+                <p className="text-xs text-[#777181]">
+                  Hybrid Detection Architecture · Deterministic Rules &amp; Google Gemini
                 </p>
               </div>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-lg text-[#777181] hover:text-[#252033] hover:bg-[#FCE7F3]/50 transition-colors cursor-pointer"
+              aria-label="Close modal"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Body */}
-          <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto text-sm">
-            {/* Engine 1: Deterministic */}
-            <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800 space-y-2">
-              <div className="flex items-center space-x-2 text-cyan-400 font-mono text-xs font-bold uppercase">
+          <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto text-sm">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2 text-[#C92D7D] font-semibold text-xs uppercase tracking-wide">
                 <Cpu className="w-4 h-4" />
-                <span>1. Zero-Tolerance Deterministic Rule Matrix</span>
+                <span>01. Zero-Tolerance Risk Engine</span>
               </div>
-              <p className="text-xs leading-relaxed text-slate-300">
-                SCAMSHIELD operates with hard-coded zero-tolerance algorithms. When an unvetted message offers employment, housing, or lottery selection while simultaneously demanding an upfront deposit, laptop fee, or gate pass via UPI or bank transfer, the deterministic engine mandates an immediate critical threat classification.
+              <p className="text-sm leading-relaxed text-[#777181]">
+                Every submission runs through calibrated lexical, payment, and domain-entropy rules. When a message combines unvetted hiring or housing offers with upfront UPI deposits or coercive countdowns, the score locks into high or critical risk without guesswork.
               </p>
             </div>
 
-            {/* Engine 2: Gemini Multimodal AI */}
-            <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800 space-y-2">
-              <div className="flex items-center space-x-2 text-indigo-400 font-mono text-xs font-bold uppercase">
-                <Zap className="w-4 h-4" />
-                <span>2. Gemini Multimodal Intelligence</span>
+            <div className="pt-4 border-t border-[#F0E5EC] space-y-1.5">
+              <div className="flex items-center gap-2 text-[#C92D7D] font-semibold text-xs uppercase tracking-wide">
+                <Sparkles className="w-4 h-4" />
+                <span>02. Google Gemini Multimodal Reasoning</span>
               </div>
-              <p className="text-xs leading-relaxed text-slate-300">
-                Our Gemini vision and language pipeline extracts semantic nuances, evaluates psychological coercion, checks for brand homoglyph spoofing in URLs, inspects letterheads for counterfeit artifacts, and correlates isolated signals into a cohesive forensic narrative.
+              <p className="text-sm leading-relaxed text-[#777181]">
+                Google Gemini extracts text from uploaded screenshots and appointment letters, detects visual tampering or spoofed branding, and translates complex technical findings into clear, protective guidance.
               </p>
             </div>
 
-            {/* Pillar 3: Privacy & Zero Storage */}
-            <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800 space-y-2">
-              <div className="flex items-center space-x-2 text-emerald-400 font-mono text-xs font-bold uppercase">
+            <div className="pt-4 border-t border-[#F0E5EC] space-y-1.5">
+              <div className="flex items-center gap-2 text-[#16A36A] font-semibold text-xs uppercase tracking-wide">
                 <Lock className="w-4 h-4" />
-                <span>3. Ephemeral In-Memory Privacy</span>
+                <span>03. Ephemeral Zero-Storage Privacy</span>
               </div>
-              <p className="text-xs leading-relaxed text-slate-300">
-                Your submitted text, screenshots, and URLs are evaluated entirely in volatile memory. SCAMSHIELD retains zero logs, databases, or training snapshots of your submissions. Once your session ends, the evidence is permanently purged.
+              <p className="text-sm leading-relaxed text-[#777181]">
+                Messages, URLs, and screenshots are inspected strictly in volatile memory for your active session. Nothing is logged to external databases or retained after you close your tab.
               </p>
             </div>
 
-            {/* The 3-Step Doctrine */}
-            <div className="space-y-2">
-              <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider block">
-                THE 3-STEP SECURITY DOCTRINE:
+            <div className="pt-4 border-t border-[#F0E5EC]">
+              <span className="text-xs font-semibold text-[#777181] block mb-3">
+                The 3-Step Protection Protocol
               </span>
-              <div className="grid grid-cols-3 gap-2 text-center font-mono text-xs">
-                <div className="p-3 rounded-lg bg-cyan-950/40 border border-cyan-800/40 text-cyan-300">
-                  <div className="font-bold text-white mb-0.5">1. PAUSE</div>
-                  <div className="text-[10px] text-slate-400">Ignore 2-hour timers</div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                <div className="p-3.5 rounded-xl bg-[#FFF8FC] border border-[#F0E5EC]">
+                  <div className="font-bold text-[#252033] text-sm">1. Pause</div>
+                  <div className="text-xs text-[#777181] mt-0.5">Ignore artificial deadlines</div>
                 </div>
-                <div className="p-3 rounded-lg bg-amber-950/40 border border-amber-800/40 text-amber-300">
-                  <div className="font-bold text-white mb-0.5">2. VERIFY</div>
-                  <div className="text-[10px] text-slate-400">Search official portals</div>
+                <div className="p-3.5 rounded-xl bg-[#FFF8FC] border border-[#F0E5EC]">
+                  <div className="font-bold text-[#252033] text-sm">2. Verify</div>
+                  <div className="text-xs text-[#777181] mt-0.5">Check official domains</div>
                 </div>
-                <div className="p-3 rounded-lg bg-emerald-950/40 border border-emerald-800/40 text-emerald-300">
-                  <div className="font-bold text-white mb-0.5">3. PROTECT</div>
-                  <div className="text-[10px] text-slate-400">Block and report</div>
+                <div className="p-3.5 rounded-xl bg-[#FFF8FC] border border-[#F0E5EC]">
+                  <div className="font-bold text-[#252033] text-sm">3. Protect</div>
+                  <div className="text-xs text-[#777181] mt-0.5">Block, report, or freeze</div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="p-4 bg-slate-900/80 border-t border-slate-800 flex items-center justify-end">
+          <div className="p-4 bg-[#FFF8FC] border-t border-[#F0E5EC] flex items-center justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-mono text-xs font-bold transition-all"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#E94D9B] to-[#C92D7D] text-white text-sm font-semibold hover:from-[#d93d8b] hover:to-[#b3246d] transition-all cursor-pointer"
             >
               Got It
             </button>

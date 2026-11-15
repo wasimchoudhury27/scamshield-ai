@@ -6,7 +6,12 @@ let aiClient: GoogleGenAI | null = null;
 function getAiClient(): GoogleGenAI | null {
   if (!aiClient && process.env.GEMINI_API_KEY) {
     aiClient = new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY
+      apiKey: process.env.GEMINI_API_KEY,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        },
+      },
     });
   }
   return aiClient;
@@ -31,11 +36,19 @@ export interface AiExplanationResult {
   aiAssisted: boolean;
 }
 
-// gemini-3.1-flash-lite handles fast inference and avoids high-demand 503 spikes; gemini-3.8-flash serves as secondary
-const CANDIDATE_MODELS = ['gemini-3.1-flash-lite', 'gemini-3.8-flash'];
+const CANDIDATE_MODELS = ['gemini-4-hydrogen', 'gemini-3.1-flash-lite'];
 
 async function waitMs(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+    )
+  ]);
 }
 
 /**
@@ -76,12 +89,13 @@ Generate a JSON response conforming strictly to the requested schema.`;
   // Try candidate models in order to gracefully absorb transient 503 high-demand spikes
   for (const model of CANDIDATE_MODELS) {
     try {
-      const response = await ai.models.generateContent({
-        model,
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
+      const response = await withTimeout(
+        ai.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: {
             type: Type.OBJECT,
             properties: {
               summary: {
@@ -105,7 +119,10 @@ Generate a JSON response conforming strictly to the requested schema.`;
             required: ['summary', 'whyThisScore', 'recommendedActions']
           }
         }
-      });
+      }),
+      8000,
+      `Gemini ${model}`
+    );
 
       const text = response.text;
       if (text) {
@@ -122,11 +139,11 @@ Generate a JSON response conforming strictly to the requested schema.`;
       }
     } catch (err: any) {
       const errMsg = err?.message || String(err);
-      const isTransient = errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('UNAVAILABLE') || errMsg.includes('429');
+      const isTransient = errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('UNAVAILABLE') || errMsg.includes('429') || errMsg.includes('timed out');
       if (isTransient) {
-        // High demand on current model; brief backoff and try next model
-        console.warn(`Model ${model} experiencing temporary demand/503. Testing alternate model...`);
-        await waitMs(350);
+        // High demand or timeout on current model; brief backoff and try next model
+        console.warn(`Model ${model} experiencing temporary demand/timeout. Testing alternate model...`);
+        await waitMs(250);
         continue;
       }
       console.warn(`Model ${model} request error (${errMsg.slice(0, 100)}). Falling back...`);
@@ -152,36 +169,40 @@ export async function analyzeImageScreenshot(imageBase64: string, mimeType: stri
 
   for (const model of CANDIDATE_MODELS) {
     try {
-      const response = await ai.models.generateContent({
-        model,
-        contents: {
-          parts: [
-            {
-              inlineData: {
-                data: imageBase64,
-                mimeType: mimeType || 'image/png'
-              }
-            },
-            {
-              text: `Analyze this image (which may be a suspicious job offer letter, appointment letter, rental contract, SMS/chat screenshot, or payment demand).
+      const response = await withTimeout(
+        ai.models.generateContent({
+          model,
+          contents: {
+            parts: [
+              {
+                inlineData: {
+                  data: imageBase64,
+                  mimeType: mimeType || 'image/png'
+                }
+              },
+              {
+                text: `Analyze this image (which may be a suspicious job offer letter, appointment letter, rental contract, SMS/chat screenshot, or payment demand).
 1. Transcribe ALL visible text accurately.
 2. Note any visual scam indicators (such as pixelated corporate logos, mismatched fonts, counterfeit stamps, amateur alignment, or unusual QR codes).
 Format as JSON: { "extractedText": "...", "visualNotes": "..." }`
+              }
+            ]
+          },
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                extractedText: { type: Type.STRING },
+                visualNotes: { type: Type.STRING }
+              },
+              required: ['extractedText', 'visualNotes']
             }
-          ]
-        },
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              extractedText: { type: Type.STRING },
-              visualNotes: { type: Type.STRING }
-            },
-            required: ['extractedText', 'visualNotes']
           }
-        }
-      });
+        }),
+        12000,
+        `Vision ${model}`
+      );
 
       const text = response.text;
       if (text) {
@@ -193,10 +214,10 @@ Format as JSON: { "extractedText": "...", "visualNotes": "..." }`
       }
     } catch (err: any) {
       const errMsg = err?.message || String(err);
-      const isTransient = errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('UNAVAILABLE') || errMsg.includes('429');
+      const isTransient = errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('UNAVAILABLE') || errMsg.includes('429') || errMsg.includes('timed out');
       if (isTransient) {
-        console.warn(`Vision model ${model} experiencing temporary demand/503. Testing alternate model...`);
-        await waitMs(350);
+        console.warn(`Vision model ${model} experiencing temporary demand/timeout. Testing alternate model...`);
+        await waitMs(250);
         continue;
       }
       console.warn(`Vision analysis on ${model} error (${errMsg.slice(0, 100)}). Falling back...`);

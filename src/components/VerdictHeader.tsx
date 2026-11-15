@@ -1,7 +1,18 @@
 import React, { useState } from 'react';
 import { AnalysisResult } from '../types.js';
 import { InvestigationRing } from './InvestigationRing.js';
-import { ShieldAlert, ShieldCheck, AlertTriangle, AlertOctagon, RotateCcw, Copy, Check, Sparkles, ArrowLeft, Globe, Layers } from 'lucide-react';
+import {
+  ShieldAlert,
+  ShieldCheck,
+  AlertTriangle,
+  AlertOctagon,
+  RotateCcw,
+  Copy,
+  Check,
+  ArrowLeft,
+  Globe,
+  Layers
+} from 'lucide-react';
 
 interface VerdictHeaderProps {
   result: AnalysisResult;
@@ -12,7 +23,7 @@ export const VerdictHeader: React.FC<VerdictHeaderProps> = ({ result, onReset })
   const [copied, setCopied] = useState(false);
 
   const handleCopyReport = () => {
-    const reportText = `SCAMSHIELD THREAT INVESTIGATION REPORT
+    const reportText = `SCAMSHIELD AI THREAT REPORT
 Assessment ID: ${result.id}
 Risk Verdict: ${result.riskLevel} (${result.threatScore}/100)
 Confidence: ${result.evidenceStrength} Evidence
@@ -21,16 +32,16 @@ Summary: ${result.summary}
 Primary Observable Evidence:
 ${result.primaryQuote ? `"${result.primaryQuote}"` : 'Multiple structural signals detected'}
 
-Why SCAMSHIELD flagged this:
+Why SCAMSHIELD AI flagged this:
 ${result.whyThisScore}
 
 Key Signals Isolated:
 ${result.signals.map((s, i) => `${i + 1}. [${s.category}] ${s.name} (+${s.scoreWeight} pts): ${s.whatDetected}`).join('\n')}
 
-Defensive Recommendations:
+Recommended Actions:
 ${result.recommendedActions.map((a, i) => `${i + 1}. ${a}`).join('\n')}
 
-Generated via SCAMSHIELD Dual-Engine Security Platform (Pause. Verify. Protect.)`;
+Generated via SCAMSHIELD AI (Think Before You Click. Stay Protected.)`;
 
     navigator.clipboard.writeText(reportText);
     setCopied(true);
@@ -41,36 +52,40 @@ Generated via SCAMSHIELD Dual-Engine Security Platform (Pause. Verify. Protect.)
     switch (result.riskLevel) {
       case 'CRITICAL':
         return {
-          color: '#ef4444',
-          badgeText: 'CRITICAL RISK',
-          badgeClass: 'bg-red-950/80 text-red-400 border-red-500/50',
-          icon: AlertOctagon,
-          summaryBg: 'border-red-500/30'
+          color: '#E5484D',
+          badgeText: 'Critical Risk Verdict',
+          textClass: 'text-[#E5484D]',
+          bgSoft: 'bg-[#E5484D]/10',
+          borderSoft: 'border-[#E5484D]/30',
+          icon: AlertOctagon
         };
       case 'HIGH':
         return {
-          color: '#f97316',
-          badgeText: 'HIGH RISK',
-          badgeClass: 'bg-orange-950/80 text-orange-400 border-orange-500/50',
-          icon: ShieldAlert,
-          summaryBg: 'border-orange-500/30'
+          color: '#E99A24',
+          badgeText: 'High Risk Verdict',
+          textClass: 'text-[#E99A24]',
+          bgSoft: 'bg-[#E99A24]/10',
+          borderSoft: 'border-[#E99A24]/30',
+          icon: ShieldAlert
         };
       case 'MODERATE':
         return {
-          color: '#f59e0b',
-          badgeText: 'MODERATE SUSPICION',
-          badgeClass: 'bg-amber-950/80 text-amber-400 border-amber-500/50',
-          icon: AlertTriangle,
-          summaryBg: 'border-amber-500/30'
+          color: '#E99A24',
+          badgeText: 'Moderate Suspicion',
+          textClass: 'text-[#E99A24]',
+          bgSoft: 'bg-[#E99A24]/10',
+          borderSoft: 'border-[#E99A24]/30',
+          icon: AlertTriangle
         };
       case 'LOW':
       default:
         return {
-          color: '#10b981',
-          badgeText: 'LOW RISK',
-          badgeClass: 'bg-emerald-950/80 text-emerald-400 border-emerald-500/50',
-          icon: ShieldCheck,
-          summaryBg: 'border-emerald-500/30'
+          color: '#16A36A',
+          badgeText: 'Low Risk Verdict',
+          textClass: 'text-[#16A36A]',
+          bgSoft: 'bg-[#16A36A]/10',
+          borderSoft: 'border-[#16A36A]/30',
+          icon: ShieldCheck
         };
     }
   };
@@ -79,51 +94,46 @@ Generated via SCAMSHIELD Dual-Engine Security Platform (Pause. Verify. Protect.)
   const IconComponent = theme.icon;
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Top Action Subbar with 44px+ touch-targets for mobile */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 sm:p-4 rounded-xl bg-[#12141a] border border-zinc-800 text-xs font-mono">
-        <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
+    <div className="space-y-4">
+      {/* Case Subbar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 sm:px-5 rounded-2xl bg-white border border-[#F0E5EC] shadow-sm">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
             onClick={onReset}
-            className="min-h-[44px] min-w-[44px] p-2.5 rounded-lg bg-[#161922] hover:bg-zinc-800 border border-zinc-700 text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center justify-center flex-shrink-0 touch-manipulation"
-            title="Return to investigation console"
-            aria-label="Back to investigation console"
+            className="min-h-[40px] min-w-[40px] p-2 rounded-xl bg-[#FFF8FC] hover:bg-[#FCE7F3] border border-[#F0E5EC] text-[#252033] transition-colors cursor-pointer flex items-center justify-center shrink-0"
+            title="Return to scanner"
+            aria-label="Back to scanner"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="min-w-0">
-            <div className="flex items-center space-x-2 flex-wrap">
-              <span className="text-emerald-400 font-bold uppercase text-[11px] sm:text-xs">
-                CASE DOSSIER #{result.id.slice(-8)}
-              </span>
-              <span className="text-slate-600 hidden sm:inline">|</span>
-              <span className="text-slate-400 text-[10px] sm:text-[11px] truncate max-w-xs">
-                {new Date(result.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
+            <div className="flex items-center gap-2 text-xs text-[#777181] font-mono">
+              <span className="font-semibold text-[#C92D7D]">Case #{result.id.slice(-8)}</span>
+              <span aria-hidden="true">·</span>
+              <span>{new Date(result.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
-            <p className="text-slate-400 truncate max-w-md font-sans text-[11px] mt-0.5">
+            <p className="text-xs text-[#777181] truncate max-w-md mt-0.5">
               Input: &ldquo;{result.inputSnippet}&rdquo;
             </p>
           </div>
         </div>
 
-        {/* Buttons: 2-column grid on small mobile, flex row on sm+ */}
-        <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto flex-shrink-0">
+        <div className="grid grid-cols-2 sm:flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={handleCopyReport}
-            className="min-h-[44px] flex items-center justify-center space-x-1.5 px-3 py-2 rounded-lg bg-[#161922] hover:bg-zinc-800 border border-zinc-700 text-slate-300 hover:text-white text-xs font-mono transition-colors cursor-pointer touch-manipulation"
+            className="min-h-[40px] inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-[#FFF8FC] border border-[#F0E5EC] text-[#252033] text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap"
           >
             {copied ? (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                <span className="text-emerald-400 font-semibold truncate">Copied</span>
+                <Check className="w-3.5 h-3.5 text-[#16A36A] shrink-0" />
+                <span className="text-[#16A36A]">Copied</span>
               </>
             ) : (
               <>
-                <Copy className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                <span className="truncate">Copy Report</span>
+                <Copy className="w-3.5 h-3.5 text-[#777181] shrink-0" />
+                <span>Copy Report</span>
               </>
             )}
           </button>
@@ -131,25 +141,23 @@ Generated via SCAMSHIELD Dual-Engine Security Platform (Pause. Verify. Protect.)
           <button
             type="button"
             onClick={onReset}
-            className="min-h-[44px] flex items-center justify-center space-x-1.5 px-3 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-mono font-semibold transition-all cursor-pointer shadow-[0_0_12px_rgba(16,185,129,0.15)] touch-manipulation"
+            className="min-h-[40px] inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#E94D9B] to-[#C92D7D] text-white text-xs font-semibold transition-all cursor-pointer shadow-sm whitespace-nowrap"
           >
-            <RotateCcw className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="truncate">New Scan</span>
+            <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+            <span>New Scan</span>
           </button>
         </div>
       </div>
 
-      {/* Main Forensic Verdict Card - Stack Vertically on Mobile without Overflow */}
-      <div className={`rounded-2xl bg-[#12141a] border ${theme.summaryBg} p-4 sm:p-6 lg:p-8 shadow-2xl relative overflow-hidden backdrop-blur-xl`}>
-        {/* Subtle accent bar */}
+      {/* Main Verdict Surface */}
+      <div className="rounded-2xl bg-white border border-[#F0E5EC] p-5 sm:p-8 shadow-[0_14px_40px_-14px_rgba(201,45,125,0.12)] relative overflow-hidden">
         <div
           className="absolute top-0 left-0 right-0 h-1"
           style={{ backgroundColor: theme.color }}
         />
 
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-8 lg:gap-10">
-          {/* Circular Gauge / Investigation Ring (Centered & responsive) */}
-          <div className="flex-shrink-0 w-full lg:w-auto flex justify-center">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
+          <div className="shrink-0 w-full lg:w-auto flex justify-center">
             <InvestigationRing
               score={result.threatScore}
               riskLevel={result.riskLevel}
@@ -158,68 +166,61 @@ Generated via SCAMSHIELD Dual-Engine Security Platform (Pause. Verify. Protect.)
             />
           </div>
 
-          {/* Executive Verdict & Metadata */}
-          <div className="flex-1 space-y-3 sm:space-y-4 text-center lg:text-left w-full min-w-0">
-            {/* Verdict Pill */}
-            <div
-              className="inline-flex items-center space-x-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full border text-[10px] sm:text-xs font-mono font-bold uppercase tracking-wider shadow-sm"
-              style={{
-                borderColor: theme.color + '60',
-                backgroundColor: theme.color + '15',
-                color: theme.color
-              }}
-            >
-              <IconComponent className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
-              <span>{theme.badgeText} VERDICT</span>
+          <div className="flex-1 space-y-4 text-center lg:text-left w-full min-w-0">
+            <div className={`inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wide ${theme.textClass}`}>
+              <IconComponent className="w-4 h-4 shrink-0" />
+              <span>{theme.badgeText}</span>
             </div>
 
-            <h2 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-extrabold tracking-tight text-white leading-tight break-words">
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#252033] leading-tight [text-wrap:balance]">
               {result.headline}
             </h2>
 
-            <p className="text-xs sm:text-sm lg:text-base text-slate-300 font-sans leading-relaxed max-w-2xl mx-auto lg:mx-0">
+            <p className="text-sm sm:text-base text-[#777181] leading-relaxed max-w-2xl mx-auto lg:mx-0">
               {result.summary}
             </p>
 
-            {/* Observable Entity Indicators */}
-            <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-2 text-[11px] sm:text-xs font-mono">
-              <div className="flex items-center space-x-1.5 sm:space-x-2 bg-[#161922] px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-zinc-800 text-slate-300">
-                <span className="text-slate-500">Confidence:</span>
-                <span className="text-emerald-400 font-semibold">{result.evidenceStrength}</span>
-              </div>
-
+            {/* Unboxed Metadata Line */}
+            <div className="pt-1 flex flex-wrap items-center justify-center lg:justify-start gap-x-3 gap-y-1 text-xs text-[#777181]">
+              <span>
+                Confidence: <strong className="text-[#252033]">{result.evidenceStrength}</strong>
+              </span>
               {result.extractedEntities.amounts && result.extractedEntities.amounts.length > 0 && (
-                <div className="flex items-center space-x-1.5 bg-red-950/40 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-red-500/40 text-red-300">
-                  <span className="text-red-400 font-bold">Demands:</span>
-                  <span className="truncate max-w-[180px] sm:max-w-none">{result.extractedEntities.amounts.join(', ')}</span>
-                </div>
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span>
+                    Payment demand: <strong className="text-[#E5484D] font-mono">{result.extractedEntities.amounts.join(', ')}</strong>
+                  </span>
+                </>
               )}
-
               {result.extractedEntities.claimedOrg && (
-                <div className="flex items-center space-x-1.5 bg-[#161922] px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-zinc-800 text-slate-300">
-                  <span className="text-slate-500">Entity:</span>
-                  <span className="text-slate-200 font-semibold truncate max-w-[160px] sm:max-w-none">{result.extractedEntities.claimedOrg}</span>
-                </div>
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span>
+                    Claimed entity: <strong className="text-[#252033]">{result.extractedEntities.claimedOrg}</strong>
+                  </span>
+                </>
               )}
+              <span aria-hidden="true">·</span>
+              <span>
+                Engine: <strong className="text-[#C92D7D]">{result.aiAssisted ? 'Google Gemini + Rules' : 'Rule Engine'}</strong>
+              </span>
+            </div>
 
-              <div className="flex items-center space-x-1.5 bg-[#161922] px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-zinc-800 text-slate-400">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                <span>{result.aiAssisted ? 'Correlated with Gemini' : 'Rule Engine'}</span>
-              </div>
-
+            {/* Section Jump Links */}
+            <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-2.5">
               <a
                 href="#threat-category-breakdown"
-                className="flex items-center space-x-1.5 bg-[#161922] hover:bg-zinc-800 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-zinc-800 hover:border-zinc-700 text-slate-300 transition-colors"
+                className="min-h-[38px] inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#FFF8FC] hover:bg-[#FCE7F3] border border-[#F0E5EC] text-xs font-semibold text-[#252033] transition-colors"
               >
-                <Layers className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                <Layers className="w-3.5 h-3.5 text-[#E94D9B]" />
                 <span>Threat Categories</span>
               </a>
-
               <a
                 href="#geographic-threat-visualization"
-                className="flex items-center space-x-1.5 bg-emerald-950/40 hover:bg-emerald-950/70 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-emerald-500/40 text-emerald-300 transition-colors"
+                className="min-h-[38px] inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#FFF8FC] hover:bg-[#FCE7F3] border border-[#F0E5EC] text-xs font-semibold text-[#252033] transition-colors"
               >
-                <Globe className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                <Globe className="w-3.5 h-3.5 text-[#E94D9B]" />
                 <span>Geographic Telemetry</span>
               </a>
             </div>
